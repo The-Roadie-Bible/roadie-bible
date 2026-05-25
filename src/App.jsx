@@ -33,8 +33,11 @@ const activityTypes = [
 
 export default function App() {
   const [listings, setListings] = useState([]);
-  const [search, setSearch] = useState("");
-  const [selectedType, setSelectedType] = useState("All");
+  const [adminListings, setAdminListings] = useState([]);
+  const [session, setSession] = useState(null);
+  const [showAdmin, setShowAdmin] = useState(window.location.search.includes("admin"));
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   const [formData, setFormData] = useState({
     place_name: "",
@@ -52,26 +55,38 @@ export default function App() {
 
   useEffect(() => {
     fetchListings();
+
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      if (data.session) fetchAdminListings();
+    });
   }, []);
 
   async function fetchListings() {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("listings")
       .select("*")
       .eq("approved", true)
       .order("created_at", { ascending: false });
 
-    if (!error) setListings(data || []);
+    setListings(data || []);
+  }
+
+  async function fetchAdminListings() {
+    const { data, error } = await supabase
+      .from("listings")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (!error) setAdminListings(data || []);
   }
 
   function toggleActivityType(type) {
-    const current = formData.activity_type;
-
     setFormData({
       ...formData,
-      activity_type: current.includes(type)
-        ? current.filter((item) => item !== type)
-        : [...current, type],
+      activity_type: formData.activity_type.includes(type)
+        ? formData.activity_type.filter((item) => item !== type)
+        : [...formData.activity_type, type],
     });
   }
 
@@ -89,366 +104,150 @@ export default function App() {
       },
     ]);
 
-    if (error) {
-      alert("Error submitting tip: " + error.message);
-      return;
-    }
+    if (error) return alert("Error submitting tip: " + error.message);
 
     alert("Tip submitted for approval!");
+  }
 
-    setFormData({
-      place_name: "",
-      country: "",
-      city: "",
-      activity_type: [],
-      price_range: "1",
-      description: "",
-      location: "",
-      google_maps: "",
-      google_reviews: "",
-      image_url: "",
-      last_visited: "",
+  async function signIn(e) {
+    e.preventDefault();
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
     });
+
+    if (error) return alert(error.message);
+
+    setSession(data.session);
+    fetchAdminListings();
+  }
+
+  async function approveListing(id) {
+    await supabase.from("listings").update({ approved: true }).eq("id", id);
+    fetchListings();
+    fetchAdminListings();
+  }
+
+  async function rejectListing(id) {
+    await supabase.from("listings").delete().eq("id", id);
+    fetchListings();
+    fetchAdminListings();
   }
 
   async function upvote(id, currentVotes) {
-    await supabase
-      .from("listings")
-      .update({ upvotes: currentVotes + 1 })
-      .eq("id", id);
-
+    await supabase.from("listings").update({ upvotes: currentVotes + 1 }).eq("id", id);
     fetchListings();
   }
 
-  const filteredListings = listings.filter((listing) => {
-    const text =
-      `${listing.place_name} ${listing.country} ${listing.city} ${listing.activity_type} ${listing.description}`.toLowerCase();
-
-    return (
-      text.includes(search.toLowerCase()) &&
-      (selectedType === "All" ||
-        listing.activity_type?.includes(selectedType))
-    );
-  });
-
   return (
-    <div
-      style={{
-        background: "#0f172a",
-        minHeight: "100vh",
-        color: "white",
-        padding: "24px",
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-      <h1 style={{ fontSize: "52px", marginBottom: "10px" }}>
-        The Roadie Bible
-      </h1>
+    <div style={{ background: "#0f172a", minHeight: "100vh", color: "white", padding: 24, fontFamily: "Arial" }}>
+      <button onClick={() => setShowAdmin(!showAdmin)} style={{ float: "right" }}>
+        Admin
+      </button>
 
-      <p style={{ marginBottom: "30px", fontSize: "18px" }}>
-        Global travel help guide for touring crew & travellers
-      </p>
-
-      <div
-        style={{
-          display: "flex",
-          gap: "12px",
-          flexWrap: "wrap",
-          marginBottom: "40px",
-        }}
-      >
-        <input
-          style={{ ...fieldStyle, maxWidth: "300px" }}
-          placeholder="Search city, country or venue"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-
-        <select
-          style={{ ...fieldStyle, maxWidth: "260px" }}
-          value={selectedType}
-          onChange={(e) => setSelectedType(e.target.value)}
-        >
-          <option>All</option>
-
-          {activityTypes.map((type) => (
-            <option key={type}>{type}</option>
-          ))}
-        </select>
-      </div>
+      <h1 style={{ fontSize: 52 }}>The Roadie Bible</h1>
+      <p>Global travel help guide for touring crew & travellers</p>
 
       <h2>Approved Recommendations</h2>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(280px,1fr))",
-          gap: "20px",
-          marginBottom: "60px",
-        }}
-      >
-        {filteredListings.map((listing) => (
-          <div
-            key={listing.id}
-            style={{
-              background: "#1e293b",
-              borderRadius: "16px",
-              overflow: "hidden",
-            }}
-          >
-            {listing.image_url && (
-              <img
-                src={listing.image_url}
-                alt={listing.place_name}
-                style={{
-                  width: "100%",
-                  height: "200px",
-                  objectFit: "cover",
-                }}
-              />
-            )}
-
-            <div style={{ padding: "20px" }}>
-              <h3>{listing.place_name}</h3>
-
-              <p>{listing.location}</p>
-
-              <p>
-                {listing.city}, {listing.country}
-              </p>
-
-              <p>{listing.activity_type}</p>
-
-              <p>{"£".repeat(listing.price_range || 1)}</p>
-
-              <p>{listing.description}</p>
-
-              {listing.google_maps && (
-                <p>
-                  <a
-                    href={listing.google_maps}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{ color: "#38bdf8" }}
-                  >
-                    Open in Google Maps
-                  </a>
-                </p>
-              )}
-
-              {listing.google_reviews && (
-                <p>
-                  <a
-                    href={listing.google_reviews}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{ color: "#facc15" }}
-                  >
-                    Google Reviews
-                  </a>
-                </p>
-              )}
-
-              <button
-                onClick={() => upvote(listing.id, listing.upvotes || 0)}
-                style={{
-                  padding: "10px 16px",
-                  borderRadius: "8px",
-                  border: "none",
-                  cursor: "pointer",
-                  marginTop: "10px",
-                }}
-              >
-                👍 {listing.upvotes || 0}
-              </button>
-            </div>
+      <div style={{ display: "grid", gap: 20, gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))" }}>
+        {listings.map((listing) => (
+          <div key={listing.id} style={{ background: "#1e293b", borderRadius: 16, padding: 20 }}>
+            {listing.image_url && <img src={listing.image_url} alt="" style={{ width: "100%", height: 180, objectFit: "cover" }} />}
+            <h3>{listing.place_name}</h3>
+            <p>{listing.location}</p>
+            <p>{listing.city}, {listing.country}</p>
+            <p>{listing.activity_type}</p>
+            <p>{"£".repeat(listing.price_range || 1)}</p>
+            <p>{listing.description}</p>
+            {listing.google_maps && <a href={listing.google_maps} target="_blank" rel="noreferrer" style={{ color: "#38bdf8" }}>Google Maps</a>}
+            <br />
+            {listing.google_reviews && <a href={listing.google_reviews} target="_blank" rel="noreferrer" style={{ color: "#facc15" }}>Google Reviews</a>}
+            <br />
+            <button onClick={() => upvote(listing.id, listing.upvotes || 0)}>👍 {listing.upvotes || 0}</button>
           </div>
         ))}
       </div>
 
       <h2>Submit a Tip</h2>
 
-      <form
-        onSubmit={submitTip}
-        style={{
-          display: "grid",
-          gap: "12px",
-          maxWidth: "650px",
-        }}
-      >
-        <input
-          style={fieldStyle}
-          placeholder="Place name"
-          value={formData.place_name}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              place_name: e.target.value,
-            })
-          }
-          required
-        />
-
-        <input
-          style={fieldStyle}
-          placeholder="Country"
-          value={formData.country}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              country: e.target.value,
-            })
-          }
-          required
-        />
-
-        <input
-          style={fieldStyle}
-          placeholder="City"
-          value={formData.city}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              city: e.target.value,
-            })
-          }
-          required
-        />
-
-        <input
-          style={fieldStyle}
-          placeholder="Location / area"
-          value={formData.location}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              location: e.target.value,
-            })
-          }
-        />
+      <form onSubmit={submitTip} style={{ display: "grid", gap: 12, maxWidth: 650 }}>
+        <input style={fieldStyle} placeholder="Place name" required onChange={(e) => setFormData({ ...formData, place_name: e.target.value })} />
+        <input style={fieldStyle} placeholder="Country" required onChange={(e) => setFormData({ ...formData, country: e.target.value })} />
+        <input style={fieldStyle} placeholder="City" required onChange={(e) => setFormData({ ...formData, city: e.target.value })} />
+        <input style={fieldStyle} placeholder="Location / area" onChange={(e) => setFormData({ ...formData, location: e.target.value })} />
 
         <div style={fieldStyle}>
           <strong>Activity type</strong>
-
-          <div
-            style={{
-              display: "grid",
-              gap: "8px",
-              marginTop: "10px",
-            }}
-          >
-            {activityTypes.map((type) => (
-              <label key={type} style={{ color: "#000" }}>
-                <input
-                  type="checkbox"
-                  checked={formData.activity_type.includes(type)}
-                  onChange={() => toggleActivityType(type)}
-                />{" "}
-                {type}
-              </label>
-            ))}
-          </div>
+          {activityTypes.map((type) => (
+            <label key={type} style={{ display: "block", marginTop: 8 }}>
+              <input type="checkbox" onChange={() => toggleActivityType(type)} /> {type}
+            </label>
+          ))}
         </div>
 
-        <select
-          style={fieldStyle}
-          value={formData.price_range}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              price_range: e.target.value,
-            })
-          }
-          required
-        >
+        <select style={fieldStyle} onChange={(e) => setFormData({ ...formData, price_range: e.target.value })}>
           <option value="1">£</option>
           <option value="2">££</option>
           <option value="3">£££</option>
           <option value="4">££££</option>
         </select>
 
-        <textarea
-          style={fieldStyle}
-          placeholder="Brief description"
-          rows="4"
-          value={formData.description}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              description: e.target.value,
-            })
-          }
-          required
-        />
+        <textarea style={fieldStyle} placeholder="Brief description" required onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
+        <input style={fieldStyle} placeholder="Google Maps link" onChange={(e) => setFormData({ ...formData, google_maps: e.target.value })} />
+        <input style={fieldStyle} placeholder="Google Reviews link" onChange={(e) => setFormData({ ...formData, google_reviews: e.target.value })} />
+        <input style={fieldStyle} placeholder="Image URL" onChange={(e) => setFormData({ ...formData, image_url: e.target.value })} />
+        <input style={fieldStyle} type="date" onChange={(e) => setFormData({ ...formData, last_visited: e.target.value })} />
 
-        <input
-          style={fieldStyle}
-          placeholder="Google Maps link"
-          value={formData.google_maps}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              google_maps: e.target.value,
-            })
-          }
-        />
+        <label><input type="checkbox" required /> I am not a bot</label>
 
-        <input
-          style={fieldStyle}
-          placeholder="Google Reviews link"
-          value={formData.google_reviews}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              google_reviews: e.target.value,
-            })
-          }
-        />
-
-        <input
-          style={fieldStyle}
-          placeholder="Image URL"
-          value={formData.image_url}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              image_url: e.target.value,
-            })
-          }
-        />
-
-        <input
-          style={fieldStyle}
-          type="date"
-          value={formData.last_visited}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              last_visited: e.target.value,
-            })
-          }
-        />
-
-        <label style={{ color: "white" }}>
-          <input type="checkbox" required /> I am not a bot
-        </label>
-
-        <button
-          type="submit"
-          style={{
-            padding: "16px",
-            borderRadius: "12px",
-            border: "none",
-            background: "#facc15",
-            color: "#000",
-            cursor: "pointer",
-            fontWeight: "bold",
-            fontSize: "16px",
-          }}
-        >
+        <button style={{ padding: 16, background: "#facc15", border: 0, borderRadius: 12, fontWeight: "bold" }}>
           Submit Recommendation
         </button>
       </form>
+
+      {showAdmin && (
+        <section style={{ marginTop: 60, padding: 20, background: "#111827", borderRadius: 16 }}>
+          <h2>Admin Approval Dashboard</h2>
+
+          {!session ? (
+            <form onSubmit={signIn} style={{ display: "grid", gap: 12, maxWidth: 400 }}>
+              <input style={fieldStyle} placeholder="Admin email" onChange={(e) => setEmail(e.target.value)} />
+              <input style={fieldStyle} type="password" placeholder="Password" onChange={(e) => setPassword(e.target.value)} />
+              <button>Login</button>
+            </form>
+          ) : (
+            <>
+              <button onClick={() => supabase.auth.signOut().then(() => setSession(null))}>
+                Logout
+              </button>
+
+              <h3>Pending / All Submissions</h3>
+
+              {adminListings.map((item) => (
+                <div key={item.id} style={{ background: "#1e293b", marginTop: 12, padding: 16, borderRadius: 12 }}>
+                  <strong>{item.place_name}</strong>
+                  <p>{item.city}, {item.country}</p>
+                  <p>{item.activity_type}</p>
+                  <p>{item.description}</p>
+                  <p>Status: {item.approved ? "Approved" : "Pending"}</p>
+
+                  {!item.approved && (
+                    <button onClick={() => approveListing(item.id)} style={{ marginRight: 8 }}>
+                      Approve
+                    </button>
+                  )}
+
+                  <button onClick={() => rejectListing(item.id)}>
+                    Delete
+                  </button>
+                </div>
+              ))}
+            </>
+          )}
+        </section>
+      )}
     </div>
   );
 }
