@@ -131,6 +131,7 @@ export default function App() {
         place_name: form.place_name,
         country: form.country,
         city: form.city,
+        google_maps: form.maps_link,
         maps_link: form.maps_link,
         description: form.description,
         activity_types: form.activity_types,
