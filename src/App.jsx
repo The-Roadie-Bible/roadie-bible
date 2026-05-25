@@ -6,134 +6,99 @@ const supabase = createClient(
   import.meta.env.VITE_SUPABASE_ANON_KEY
 );
 
-const EUROPEAN_COUNTRIES = [
-  "Albania",
-  "Andorra",
-  "Austria",
-  "Belarus",
-  "Belgium",
-  "Bosnia and Herzegovina",
-  "Bulgaria",
-  "Croatia",
-  "Cyprus",
-  "Czech Republic",
-  "Denmark",
-  "Estonia",
-  "Finland",
-  "France",
-  "Germany",
-  "Greece",
-  "Hungary",
-  "Iceland",
-  "Ireland",
-  "Italy",
-  "Kosovo",
-  "Latvia",
-  "Liechtenstein",
-  "Lithuania",
-  "Luxembourg",
-  "Malta",
-  "Moldova",
-  "Monaco",
-  "Montenegro",
-  "Netherlands",
-  "North Macedonia",
-  "Norway",
-  "Poland",
-  "Portugal",
-  "Romania",
-  "San Marino",
-  "Serbia",
-  "Slovakia",
-  "Slovenia",
-  "Spain",
-  "Sweden",
-  "Switzerland",
-  "Ukraine",
-  "United Kingdom",
-  "Vatican City",
+const COUNTRIES = [
+  "Albania","Andorra","Austria","Belarus","Belgium","Bosnia and Herzegovina","Bulgaria",
+  "Croatia","Cyprus","Czechia","Denmark","Estonia","Finland","France","Germany","Greece",
+  "Hungary","Iceland","Ireland","Italy","Kosovo","Latvia","Liechtenstein","Lithuania",
+  "Luxembourg","Malta","Moldova","Monaco","Montenegro","Netherlands","North Macedonia",
+  "Norway","Poland","Portugal","Romania","San Marino","Serbia","Slovakia","Slovenia",
+  "Spain","Sweden","Switzerland","Ukraine","United Kingdom","Vatican City"
 ];
 
 const ACTIVITY_TYPES = [
-  "Hidden gems",
-  "Local culture",
-  "Breakfast/Brunch",
-  "Lunch",
-  "Dinner",
-  "Sports bars",
-  "Open late",
-  "Good for large groups",
-  "Airport hotels",
-  "Day rooms",
-  "Golf clubs",
-  "Padel",
+  "Hidden gems","Local culture","Breakfast/Brunch","Lunch","Dinner","Sports bars",
+  "Open late","Good for large groups","Airport hotels","Day rooms","Golf clubs","Padel"
 ];
 
+const emptyForm = {
+  place_name: "",
+  country: "",
+  city: "",
+  maps_link: "",
+  description: "",
+  activity_types: [],
+  price_range: "£",
+  image_file: null,
+  visit_date: "",
+};
+
 export default function App() {
+  const isAdmin = window.location.pathname === "/admin";
+
   const [listings, setListings] = useState([]);
   const [pendingListings, setPendingListings] = useState([]);
-
-  const [placeName, setPlaceName] = useState("");
-  const [country, setCountry] = useState("");
-  const [city, setCity] = useState("");
-  const [mapsLink, setMapsLink] = useState("");
-  const [description, setDescription] = useState("");
-  const [selectedActivities, setSelectedActivities] = useState([]);
-  const [priceRange, setPriceRange] = useState("£");
-  const [visitDate, setVisitDate] = useState("");
-  const [imageFile, setImageFile] = useState(null);
-
+  const [comments, setComments] = useState([]);
+  const [form, setForm] = useState(emptyForm);
   const [search, setSearch] = useState("");
-  const [selectedCountryFilter, setSelectedCountryFilter] = useState("");
-  const [selectedActivityFilter, setSelectedActivityFilter] = useState("");
-
-  const isAdmin = window.location.pathname === "/admin";
+  const [countryFilter, setCountryFilter] = useState("");
+  const [activityFilter, setActivityFilter] = useState("");
+  const [priceFilter, setPriceFilter] = useState("");
+  const [session, setSession] = useState(null);
+  const [adminEmail, setAdminEmail] = useState("");
+  const [adminPassword, setAdminPassword] = useState("");
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState(null);
+  const [commentDrafts, setCommentDrafts] = useState({});
 
   useEffect(() => {
     fetchListings();
+    fetchComments();
 
-    if (isAdmin) {
-      fetchPendingListings();
-    }
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      if (data.session && isAdmin) fetchPendingListings();
+    });
   }, []);
 
   async function fetchListings() {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("listings")
       .select("*")
       .eq("approved", true)
       .order("created_at", { ascending: false });
 
-    if (!error) {
-      setListings(data || []);
-    }
+    setListings(data || []);
   }
 
   async function fetchPendingListings() {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("listings")
       .select("*")
       .eq("approved", false)
       .order("created_at", { ascending: false });
 
-    if (!error) {
-      setPendingListings(data || []);
-    }
+    setPendingListings(data || []);
+  }
+
+  async function fetchComments() {
+    const { data } = await supabase
+      .from("comments")
+      .select("*")
+      .order("created_at", { ascending: true });
+
+    setComments(data || []);
   }
 
   function toggleActivity(activity) {
-    if (selectedActivities.includes(activity)) {
-      setSelectedActivities(
-        selectedActivities.filter((a) => a !== activity)
-      );
-    } else {
-      setSelectedActivities([...selectedActivities, activity]);
-    }
+    setForm((current) => ({
+      ...current,
+      activity_types: current.activity_types.includes(activity)
+        ? current.activity_types.filter((a) => a !== activity)
+        : [...current.activity_types, activity],
+    }));
   }
 
   async function uploadImage(file) {
-    if (!file) return "";
-
     const fileName = `${Date.now()}-${file.name}`;
 
     const { error } = await supabase.storage
@@ -145,441 +110,386 @@ export default function App() {
       return "";
     }
 
-    const {
-      data: { publicUrl },
-    } = supabase.storage
+    const { data } = supabase.storage
       .from("listing-images")
       .getPublicUrl(fileName);
 
-    return publicUrl;
+    return data.publicUrl;
   }
 
   async function submitRecommendation(e) {
     e.preventDefault();
 
-    if (!imageFile) {
-      alert("Please upload an image");
-      return;
-    }
+    if (!form.image_file) return alert("Please upload an image.");
+    if (!form.activity_types.length) return alert("Please choose at least one activity type.");
 
-    const imageUrl = await uploadImage(imageFile);
-
+    const imageUrl = await uploadImage(form.image_file);
     if (!imageUrl) return;
 
     const { error } = await supabase.from("listings").insert([
       {
-        place_name: placeName,
-        country,
-        city,
-        maps_link: mapsLink,
-        description,
-        activity_types: selectedActivities,
-        price_range: priceRange,
+        place_name: form.place_name,
+        country: form.country,
+        city: form.city,
+        maps_link: form.maps_link,
+        description: form.description,
+        activity_types: form.activity_types,
+        price_range: form.price_range,
         image_url: imageUrl,
-        visit_date: visitDate,
+        visit_date: form.visit_date,
         approved: false,
+        upvotes: 0,
+        downvotes: 0,
       },
     ]);
 
-    if (error) {
-      alert("Error submitting tip: " + error.message);
-      return;
-    }
+    if (error) return alert("Error submitting tip: " + error.message);
 
     alert("Tip submitted for approval!");
+    setForm(emptyForm);
+    e.target.reset();
+  }
 
-    setPlaceName("");
-    setCountry("");
-    setCity("");
-    setMapsLink("");
-    setDescription("");
-    setSelectedActivities([]);
-    setPriceRange("£");
-    setVisitDate("");
-    setImageFile(null);
+  async function adminLogin(e) {
+    e.preventDefault();
 
-    document.getElementById("image-upload").value = "";
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: adminEmail,
+      password: adminPassword,
+    });
+
+    if (error) return alert(error.message);
+
+    setSession(data.session);
+    fetchPendingListings();
   }
 
   async function approveListing(id) {
-    const { error } = await supabase
-      .from("listings")
-      .update({ approved: true })
-      .eq("id", id);
-
-    if (!error) {
-      fetchPendingListings();
-      fetchListings();
-    }
+    await supabase.from("listings").update({ approved: true }).eq("id", id);
+    fetchPendingListings();
+    fetchListings();
   }
 
   async function deleteListing(id) {
-    const confirmDelete = confirm("Delete this submission?");
+    if (!confirm("Delete this submission?")) return;
+    await supabase.from("listings").delete().eq("id", id);
+    fetchPendingListings();
+    fetchListings();
+  }
 
-    if (!confirmDelete) return;
+  function startEdit(listing) {
+    setEditingId(listing.id);
+    setEditForm({
+      place_name: listing.place_name || "",
+      country: listing.country || "",
+      city: listing.city || "",
+      maps_link: listing.maps_link || "",
+      description: listing.description || "",
+      price_range: listing.price_range || "£",
+      visit_date: listing.visit_date || "",
+      activity_types: listing.activity_types || [],
+    });
+  }
 
+  function toggleEditActivity(activity) {
+    setEditForm((current) => ({
+      ...current,
+      activity_types: current.activity_types.includes(activity)
+        ? current.activity_types.filter((a) => a !== activity)
+        : [...current.activity_types, activity],
+    }));
+  }
+
+  async function saveEdit(id) {
     const { error } = await supabase
       .from("listings")
-      .delete()
+      .update(editForm)
       .eq("id", id);
 
-    if (!error) {
-      fetchPendingListings();
-      fetchListings();
-    }
+    if (error) return alert(error.message);
+
+    setEditingId(null);
+    setEditForm(null);
+    fetchPendingListings();
+    fetchListings();
+  }
+
+  async function vote(listing, direction) {
+    const field = direction === "up" ? "upvotes" : "downvotes";
+    const current = listing[field] || 0;
+
+    await supabase
+      .from("listings")
+      .update({ [field]: current + 1 })
+      .eq("id", listing.id);
+
+    fetchListings();
+  }
+
+  async function addComment(listingId) {
+    const draft = commentDrafts[listingId] || {};
+    if (!draft.name || !draft.comment) return alert("Please add your name and comment.");
+
+    const { error } = await supabase.from("comments").insert([
+      {
+        listing_id: listingId,
+        name: draft.name,
+        comment: draft.comment,
+      },
+    ]);
+
+    if (error) return alert(error.message);
+
+    setCommentDrafts((current) => ({
+      ...current,
+      [listingId]: { name: "", comment: "" },
+    }));
+
+    fetchComments();
   }
 
   const filteredListings = useMemo(() => {
     return listings.filter((listing) => {
-      const matchesSearch =
-        listing.place_name
-          ?.toLowerCase()
-          .includes(search.toLowerCase()) ||
-        listing.city?.toLowerCase().includes(search.toLowerCase()) ||
-        listing.country?.toLowerCase().includes(search.toLowerCase());
+      const text = `${listing.place_name} ${listing.city} ${listing.country} ${listing.description}`.toLowerCase();
 
-      const matchesCountry =
-        !selectedCountryFilter ||
-        listing.country === selectedCountryFilter;
+      const matchesSearch = text.includes(search.toLowerCase());
+      const matchesCountry = !countryFilter || listing.country === countryFilter;
+      const matchesActivity = !activityFilter || listing.activity_types?.includes(activityFilter);
+      const matchesPrice = !priceFilter || listing.price_range === priceFilter;
 
-      const matchesActivity =
-        !selectedActivityFilter ||
-        listing.activity_types?.includes(selectedActivityFilter);
-
-      return matchesSearch && matchesCountry && matchesActivity;
+      return matchesSearch && matchesCountry && matchesActivity && matchesPrice;
     });
-  }, [
-    listings,
-    search,
-    selectedCountryFilter,
-    selectedActivityFilter,
-  ]);
+  }, [listings, search, countryFilter, activityFilter, priceFilter]);
+
+  function listingComments(listingId) {
+    return comments.filter((comment) => comment.listing_id === listingId);
+  }
 
   return (
-    <div className="min-h-screen bg-[#0b1220] text-white p-6">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-5xl font-bold mb-2">
-          The Roadie Bible
-        </h1>
-
-        <p className="text-xl text-gray-300 mb-10">
-          Global travel help guide for touring crew & travellers
-        </p>
-
-        <div className="grid md:grid-cols-3 gap-4 mb-10">
-          <input
-            type="text"
-            placeholder="Search city, country or venue"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="p-3 rounded bg-white text-black"
-          />
-
-          <select
-            value={selectedCountryFilter}
-            onChange={(e) =>
-              setSelectedCountryFilter(e.target.value)
-            }
-            className="p-3 rounded bg-white text-black"
-          >
-            <option value="">All countries</option>
-
-            {EUROPEAN_COUNTRIES.map((country) => (
-              <option key={country} value={country}>
-                {country}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={selectedActivityFilter}
-            onChange={(e) =>
-              setSelectedActivityFilter(e.target.value)
-            }
-            className="p-3 rounded bg-white text-black"
-          >
-            <option value="">All activity types</option>
-
-            {ACTIVITY_TYPES.map((activity) => (
-              <option key={activity} value={activity}>
-                {activity}
-              </option>
-            ))}
-          </select>
+    <div className="min-h-screen bg-zinc-950 text-white">
+      <header className="relative overflow-hidden border-b border-white/10">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(251,191,36,0.28),_transparent_35%),radial-gradient(circle_at_bottom_right,_rgba(59,130,246,0.22),_transparent_35%)]" />
+        <div className="relative max-w-7xl mx-auto px-4 py-16 md:py-24">
+          <p className="text-amber-300 uppercase tracking-[0.25em] text-sm font-bold mb-4">
+            The Roadie Bible
+          </p>
+          <h1 className="text-5xl md:text-7xl font-black leading-none mb-6">
+            Find the good stuff before you land.
+          </h1>
+          <p className="text-xl text-zinc-300 max-w-2xl">
+            Hotels, food, sport, hidden gems and road-tested places for touring crew and global travellers.
+          </p>
         </div>
+      </header>
 
-        <h2 className="text-3xl font-bold mb-6">
-          Approved Recommendations
-        </h2>
+      <main className="max-w-7xl mx-auto px-4 py-10">
+        <section className="bg-white text-black rounded-3xl p-5 shadow-2xl -mt-16 relative z-10 mb-12">
+          <div className="grid md:grid-cols-4 gap-3">
+            <input
+              className="border rounded-2xl p-4"
+              placeholder="Search city, venue or country..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
 
-        <div className="grid md:grid-cols-2 gap-6 mb-16">
+            <select className="border rounded-2xl p-4" value={countryFilter} onChange={(e) => setCountryFilter(e.target.value)}>
+              <option value="">All countries</option>
+              {COUNTRIES.map((country) => <option key={country}>{country}</option>)}
+            </select>
+
+            <select className="border rounded-2xl p-4" value={activityFilter} onChange={(e) => setActivityFilter(e.target.value)}>
+              <option value="">All activities</option>
+              {ACTIVITY_TYPES.map((activity) => <option key={activity}>{activity}</option>)}
+            </select>
+
+            <select className="border rounded-2xl p-4" value={priceFilter} onChange={(e) => setPriceFilter(e.target.value)}>
+              <option value="">All prices</option>
+              <option>£</option>
+              <option>££</option>
+              <option>£££</option>
+            </select>
+          </div>
+        </section>
+
+        <h2 className="text-3xl font-black mb-6">Approved Recommendations</h2>
+
+        <section className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
           {filteredListings.map((listing) => (
-            <div
-              key={listing.id}
-              className="bg-[#111827] rounded-2xl overflow-hidden border border-gray-800"
-            >
+            <article key={listing.id} className="bg-white text-zinc-950 rounded-3xl overflow-hidden shadow-xl">
               {listing.image_url && (
-                <img
-                  src={listing.image_url}
-                  alt={listing.place_name}
-                  className="w-full h-64 object-cover"
-                />
+                <img src={listing.image_url} alt={listing.place_name} className="w-full h-56 object-cover" />
               )}
 
               <div className="p-5">
-                <h3 className="text-2xl font-bold mb-2">
-                  {listing.place_name}
-                </h3>
-
-                <p className="text-gray-300 mb-3">
-                  {listing.city}, {listing.country}
-                </p>
+                <h3 className="text-2xl font-black mb-1">{listing.place_name}</h3>
+                <p className="text-zinc-600 mb-3">{listing.city}, {listing.country}</p>
 
                 <div className="flex flex-wrap gap-2 mb-4">
                   {listing.activity_types?.map((activity) => (
-                    <span
-                      key={activity}
-                      className="bg-yellow-500 text-black text-sm px-3 py-1 rounded-full"
-                    >
+                    <span key={activity} className="bg-amber-400 text-black rounded-full px-3 py-1 text-sm font-bold">
                       {activity}
                     </span>
                   ))}
                 </div>
 
-                <p className="mb-4 text-gray-200">
-                  {listing.description}
-                </p>
+                <p className="mb-4">{listing.description}</p>
 
-                <div className="flex items-center justify-between">
-                  <span className="text-yellow-400 font-bold">
-                    {listing.price_range}
-                  </span>
-
-                  <a
-                    href={listing.maps_link}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg"
-                  >
-                    Open Maps
+                <div className="flex items-center justify-between mb-4">
+                  <span className="font-black text-lg">{listing.price_range}</span>
+                  <a href={listing.maps_link} target="_blank" rel="noreferrer" className="bg-zinc-950 text-white rounded-xl px-4 py-2 font-bold">
+                    Google Maps
                   </a>
                 </div>
+
+                <div className="flex gap-2 mb-5">
+                  <button onClick={() => vote(listing, "up")} className="bg-zinc-100 rounded-xl px-4 py-2 font-bold">
+                    👍 {listing.upvotes || 0}
+                  </button>
+                  <button onClick={() => vote(listing, "down")} className="bg-zinc-100 rounded-xl px-4 py-2 font-bold">
+                    👎 {listing.downvotes || 0}
+                  </button>
+                </div>
+
+                <div className="border-t pt-4">
+                  <h4 className="font-black mb-3">Comments</h4>
+
+                  {listingComments(listing.id).map((comment) => (
+                    <div key={comment.id} className="bg-zinc-100 rounded-xl p-3 mb-2">
+                      <strong>{comment.name}</strong>
+                      <p>{comment.comment}</p>
+                    </div>
+                  ))}
+
+                  <input
+                    className="border rounded-xl p-3 w-full mb-2"
+                    placeholder="Your name"
+                    value={commentDrafts[listing.id]?.name || ""}
+                    onChange={(e) =>
+                      setCommentDrafts({
+                        ...commentDrafts,
+                        [listing.id]: {
+                          ...commentDrafts[listing.id],
+                          name: e.target.value,
+                        },
+                      })
+                    }
+                  />
+
+                  <textarea
+                    className="border rounded-xl p-3 w-full mb-2"
+                    placeholder="Add a comment"
+                    value={commentDrafts[listing.id]?.comment || ""}
+                    onChange={(e) =>
+                      setCommentDrafts({
+                        ...commentDrafts,
+                        [listing.id]: {
+                          ...commentDrafts[listing.id],
+                          comment: e.target.value,
+                        },
+                      })
+                    }
+                  />
+
+                  <button onClick={() => addComment(listing.id)} className="bg-amber-400 text-black rounded-xl px-4 py-2 font-black">
+                    Post Comment
+                  </button>
+                </div>
               </div>
-            </div>
+            </article>
           ))}
-        </div>
+        </section>
 
-        <div className="bg-[#111827] p-6 rounded-2xl border border-gray-800 mb-12">
-          <h2 className="text-3xl font-bold mb-6">
-            Submit a Tip
-          </h2>
+        <section className="bg-white/10 border border-white/10 rounded-3xl p-6 mb-16">
+          <h2 className="text-3xl font-black mb-6">Submit a Tip</h2>
 
-          <form
-            onSubmit={submitRecommendation}
-            className="space-y-4"
-          >
-            <input
-              type="text"
-              placeholder="Place name"
-              value={placeName}
-              onChange={(e) => setPlaceName(e.target.value)}
-              required
-              className="w-full p-3 rounded bg-white text-black"
-            />
+          <form onSubmit={submitRecommendation} className="grid gap-4">
+            <input className="p-4 rounded-2xl text-black" placeholder="Place name" value={form.place_name} onChange={(e) => setForm({ ...form, place_name: e.target.value })} required />
 
-            <select
-              value={country}
-              onChange={(e) => setCountry(e.target.value)}
-              required
-              className="w-full p-3 rounded bg-white text-black"
-            >
+            <select className="p-4 rounded-2xl text-black" value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} required>
               <option value="">Select country</option>
-
-              {EUROPEAN_COUNTRIES.map((countryName) => (
-                <option key={countryName} value={countryName}>
-                  {countryName}
-                </option>
-              ))}
+              {COUNTRIES.map((country) => <option key={country}>{country}</option>)}
             </select>
 
-            <input
-              type="text"
-              placeholder="City"
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              required
-              className="w-full p-3 rounded bg-white text-black"
-            />
+            <input className="p-4 rounded-2xl text-black" placeholder="City" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} required />
+            <input className="p-4 rounded-2xl text-black" placeholder="Google Maps link" value={form.maps_link} onChange={(e) => setForm({ ...form, maps_link: e.target.value })} required />
 
-            <input
-              type="url"
-              placeholder="Google Maps link"
-              value={mapsLink}
-              onChange={(e) => setMapsLink(e.target.value)}
-              required
-              className="w-full p-3 rounded bg-white text-black"
-            />
-
-            <div className="bg-[#1f2937] p-4 rounded-xl">
-              <p className="font-bold mb-3">
-                Activity Types
-              </p>
-
+            <div className="bg-zinc-900 rounded-2xl p-4">
+              <p className="font-black mb-3">Activity types</p>
               <div className="grid md:grid-cols-3 gap-2">
                 {ACTIVITY_TYPES.map((activity) => (
-                  <label
-                    key={activity}
-                    className="flex items-center gap-2"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedActivities.includes(
-                        activity
-                      )}
-                      onChange={() => toggleActivity(activity)}
-                    />
-
-                    <span>{activity}</span>
+                  <label key={activity} className="flex gap-2">
+                    <input type="checkbox" checked={form.activity_types.includes(activity)} onChange={() => toggleActivity(activity)} />
+                    {activity}
                   </label>
                 ))}
               </div>
             </div>
 
-            <select
-              value={priceRange}
-              onChange={(e) => setPriceRange(e.target.value)}
-              required
-              className="w-full p-3 rounded bg-white text-black"
-            >
-              <option value="£">£ Budget</option>
-              <option value="££">££ Mid-range</option>
-              <option value="£££">£££ Premium</option>
+            <select className="p-4 rounded-2xl text-black" value={form.price_range} onChange={(e) => setForm({ ...form, price_range: e.target.value })} required>
+              <option>£</option>
+              <option>££</option>
+              <option>£££</option>
             </select>
 
-            <textarea
-              placeholder="Brief description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              required
-              rows={5}
-              className="w-full p-3 rounded bg-white text-black"
-            />
+            <textarea className="p-4 rounded-2xl text-black" rows={5} placeholder="Brief description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} required />
 
-            <div>
-              <label className="block mb-2 font-bold">
-                Upload Image
-              </label>
+            <input className="p-4 rounded-2xl bg-white text-black" type="file" accept="image/*" onChange={(e) => setForm({ ...form, image_file: e.target.files[0] })} required />
 
-              <input
-                id="image-upload"
-                type="file"
-                accept="image/*"
-                required
-                onChange={(e) =>
-                  setImageFile(e.target.files[0])
-                }
-                className="w-full p-3 rounded bg-white text-black"
-              />
-            </div>
+            <input className="p-4 rounded-2xl text-black" type="date" value={form.visit_date} onChange={(e) => setForm({ ...form, visit_date: e.target.value })} required />
 
-            <input
-              type="date"
-              value={visitDate}
-              onChange={(e) => setVisitDate(e.target.value)}
-              required
-              className="w-full p-3 rounded bg-white text-black"
-            />
-
-            <label className="flex items-center gap-2">
+            <label className="flex gap-2">
               <input type="checkbox" required />
-              <span>I am not a bot</span>
+              I am not a bot
             </label>
 
-            <button
-              type="submit"
-              className="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-4 rounded-xl text-lg"
-            >
+            <button className="bg-amber-400 text-black rounded-2xl p-4 font-black text-lg">
               Submit Recommendation
             </button>
           </form>
-        </div>
+        </section>
 
         {isAdmin && (
-          <div className="bg-[#111827] p-6 rounded-2xl border border-gray-800">
-            <h2 className="text-3xl font-bold mb-6">
-              Admin Approval Dashboard
-            </h2>
+          <section className="bg-zinc-900 border border-white/10 rounded-3xl p-6">
+            <h2 className="text-3xl font-black mb-6">Admin Approval Dashboard</h2>
 
-            <div className="space-y-6">
-              {pendingListings.map((listing) => (
-                <div
-                  key={listing.id}
-                  className="bg-[#1f2937] rounded-xl overflow-hidden"
-                >
-                  {listing.image_url && (
-                    <img
-                      src={listing.image_url}
-                      alt={listing.place_name}
-                      className="w-full h-64 object-cover"
-                    />
-                  )}
-
-                  <div className="p-5">
-                    <h3 className="text-2xl font-bold">
-                      {listing.place_name}
-                    </h3>
-
-                    <p className="text-gray-300 mb-2">
-                      {listing.city}, {listing.country}
-                    </p>
-
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {listing.activity_types?.map((activity) => (
-                        <span
-                          key={activity}
-                          className="bg-yellow-500 text-black text-sm px-3 py-1 rounded-full"
-                        >
-                          {activity}
-                        </span>
-                      ))}
-                    </div>
-
-                    <p className="mb-4">
-                      {listing.description}
-                    </p>
-
-                    <div className="flex gap-4">
-                      <button
-                        onClick={() =>
-                          approveListing(listing.id)
-                        }
-                        className="bg-green-600 hover:bg-green-500 px-5 py-2 rounded-lg font-bold"
-                      >
-                        Approve
-                      </button>
-
-                      <button
-                        onClick={() =>
-                          deleteListing(listing.id)
-                        }
-                        className="bg-red-600 hover:bg-red-500 px-5 py-2 rounded-lg font-bold"
-                      >
-                        Delete
-                      </button>
-                    </div>
+            {!session ? (
+              <form onSubmit={adminLogin} className="grid gap-3 max-w-md">
+                <input className="p-4 rounded-2xl text-black" placeholder="Admin email" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} />
+                <input className="p-4 rounded-2xl text-black" type="password" placeholder="Password" value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} />
+                <button className="bg-amber-400 text-black rounded-2xl p-4 font-black">Login</button>
+              </form>
+            ) : (
+              <div className="grid gap-5">
+                {pendingListings.map((listing) => (
+                  <div key={listing.id} className="bg-zinc-800 rounded-2xl p-5">
+                    {editingId === listing.id ? (
+                      <div className="grid gap-3">
+                        <input className="p-3 rounded text-black" value={editForm.place_name} onChange={(e) => setEditForm({ ...editForm, place_name: e.target.value })} />
+                        <input className="p-3 rounded text-black" value={editForm.city} onChange={(e) => setEditForm({ ...editForm, city: e.target.value })} />
+                        <textarea className="p-3 rounded text-black" value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} />
+                        <button onClick={() => saveEdit(listing.id)} className="bg-green-600 rounded-xl px-4 py-2 font-bold">Save Edit</button>
+                      </div>
+                    ) : (
+                      <>
+                        <h3 className="text-2xl font-black">{listing.place_name}</h3>
+                        <p>{listing.city}, {listing.country}</p>
+                        <p>{listing.description}</p>
+                        <div className="flex gap-3 mt-4">
+                          <button onClick={() => startEdit(listing)} className="bg-blue-600 rounded-xl px-4 py-2 font-bold">Edit</button>
+                          <button onClick={() => approveListing(listing.id)} className="bg-green-600 rounded-xl px-4 py-2 font-bold">Approve</button>
+                          <button onClick={() => deleteListing(listing.id)} className="bg-red-600 rounded-xl px-4 py-2 font-bold">Delete</button>
+                        </div>
+                      </>
+                    )}
                   </div>
-                </div>
-              ))}
+                ))}
 
-              {pendingListings.length === 0 && (
-                <p className="text-gray-400">
-                  No pending submissions.
-                </p>
-              )}
-            </div>
-          </div>
+                {pendingListings.length === 0 && <p>No pending submissions.</p>}
+              </div>
+            )}
+          </section>
         )}
-      </div>
+      </main>
     </div>
   );
 }
