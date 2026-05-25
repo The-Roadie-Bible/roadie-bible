@@ -336,7 +336,7 @@ export default function App() {
 
                 <div className="flex items-center justify-between mb-4">
                   <span className="font-black text-lg">{listing.price_range}</span>
-                  <a href={listing.maps_link} target="_blank" rel="noreferrer" className="bg-zinc-950 text-white rounded-xl px-4 py-2 font-bold">
+                  <a href={listing.maps_link || listing.google_maps} target="_blank" rel="noreferrer" className="bg-zinc-950 text-white rounded-xl px-4 py-2 font-bold">
                     Google Maps
                   </a>
                 </div>
