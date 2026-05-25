@@ -31,11 +31,22 @@ const activityTypes = [
   "Padel",
 ];
 
+const europeanCountries = [
+  "Albania", "Andorra", "Austria", "Belarus", "Belgium", "Bosnia and Herzegovina",
+  "Bulgaria", "Croatia", "Cyprus", "Czechia", "Denmark", "Estonia", "Finland",
+  "France", "Germany", "Greece", "Hungary", "Iceland", "Ireland", "Italy",
+  "Kosovo", "Latvia", "Liechtenstein", "Lithuania", "Luxembourg", "Malta",
+  "Moldova", "Monaco", "Montenegro", "Netherlands", "North Macedonia", "Norway",
+  "Poland", "Portugal", "Romania", "San Marino", "Serbia", "Slovakia",
+  "Slovenia", "Spain", "Sweden", "Switzerland", "Ukraine", "United Kingdom",
+  "Vatican City"
+];
+
 export default function App() {
   const [listings, setListings] = useState([]);
   const [adminListings, setAdminListings] = useState([]);
   const [session, setSession] = useState(null);
-  const [showAdmin, setShowAdmin] = useState(window.location.search.includes("admin"));
+  const [showAdmin] = useState(window.location.search.includes("admin"));
 
   const [search, setSearch] = useState("");
   const [activityFilter, setActivityFilter] = useState("All");
@@ -53,8 +64,7 @@ export default function App() {
     description: "",
     location: "",
     google_maps: "",
-    google_reviews: "",
-    image_url: "",
+    image_file: null,
     last_visited: "",
   });
 
@@ -98,11 +108,40 @@ export default function App() {
   async function submitTip(e) {
     e.preventDefault();
 
+    if (!formData.image_file) {
+      return alert("Please upload an image");
+    }
+
+    if (formData.activity_type.length === 0) {
+      return alert("Please choose at least one activity type");
+    }
+
+    const fileName = `${Date.now()}-${formData.image_file.name}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("listing-images")
+      .upload(fileName, formData.image_file);
+
+    if (uploadError) {
+      return alert("Image upload error: " + uploadError.message);
+    }
+
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from("listing-images").getPublicUrl(fileName);
+
     const { error } = await supabase.from("listings").insert([
       {
-        ...formData,
+        place_name: formData.place_name,
+        country: formData.country,
+        city: formData.city,
         activity_type: formData.activity_type.join(", "),
         price_range: Number(formData.price_range),
+        description: formData.description,
+        location: formData.location,
+        google_maps: formData.google_maps,
+        image_url: publicUrl,
+        last_visited: formData.last_visited,
         approved: false,
         upvotes: 0,
         downvotes: 0,
@@ -122,10 +161,11 @@ export default function App() {
       description: "",
       location: "",
       google_maps: "",
-      google_reviews: "",
-      image_url: "",
+      image_file: null,
       last_visited: "",
     });
+
+    e.target.reset();
   }
 
   async function signIn(e) {
@@ -176,17 +216,29 @@ export default function App() {
   });
 
   return (
-    <div style={{ background: "#0f172a", minHeight: "100vh", color: "white", padding: 24, fontFamily: "Arial, sans-serif" }}>
-      <button onClick={() => setShowAdmin(!showAdmin)} style={{ float: "right" }}>
-        Admin
-      </button>
-
+    <div
+      style={{
+        background: "#0f172a",
+        minHeight: "100vh",
+        color: "white",
+        padding: 24,
+        fontFamily: "Arial, sans-serif",
+      }}
+    >
       <h1 style={{ fontSize: 52, marginBottom: 8 }}>The Roadie Bible</h1>
+
       <p style={{ fontSize: 18, marginBottom: 30 }}>
         Global travel help guide for touring crew & travellers
       </p>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 30 }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+          gap: 12,
+          marginBottom: 30,
+        }}
+      >
         <input
           style={fieldStyle}
           placeholder="Search city, country, venue..."
@@ -220,39 +272,85 @@ export default function App() {
 
       <h2>Approved Recommendations</h2>
 
-      <div style={{ display: "grid", gap: 20, gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", marginBottom: 60 }}>
+      <div
+        style={{
+          display: "grid",
+          gap: 20,
+          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+          marginBottom: 60,
+        }}
+      >
         {filteredListings.map((listing) => (
-          <div key={listing.id} style={{ background: "#1e293b", borderRadius: 18, overflow: "hidden" }}>
+          <div
+            key={listing.id}
+            style={{
+              background: "#1e293b",
+              borderRadius: 18,
+              overflow: "hidden",
+            }}
+          >
             {listing.image_url ? (
-              <img src={listing.image_url} alt={listing.place_name} style={{ width: "100%", height: 200, objectFit: "cover" }} />
+              <img
+                src={listing.image_url}
+                alt={listing.place_name}
+                style={{ width: "100%", height: 200, objectFit: "cover" }}
+              />
             ) : (
-              <div style={{ height: 200, background: "#334155", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div
+                style={{
+                  height: 200,
+                  background: "#334155",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
                 No image yet
               </div>
             )}
 
             <div style={{ padding: 20 }}>
-              <h3 style={{ fontSize: 24, marginTop: 0 }}>{listing.place_name}</h3>
+              <h3 style={{ fontSize: 24, marginTop: 0 }}>
+                {listing.place_name}
+              </h3>
+
               <p>{listing.location}</p>
-              <p>{listing.city}, {listing.country}</p>
-              <p><strong>{listing.activity_type}</strong></p>
+              <p>
+                {listing.city}, {listing.country}
+              </p>
+              <p>
+                <strong>{listing.activity_type}</strong>
+              </p>
               <p>{"£".repeat(listing.price_range || 1)}</p>
               <p>{listing.description}</p>
 
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 16 }}>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                 {listing.google_maps && (
-                  <a href={listing.google_maps} target="_blank" rel="noreferrer" style={{ color: "#000", background: "#38bdf8", padding: "10px 14px", borderRadius: 10, textDecoration: "none", fontWeight: "bold" }}>
+                  <a
+                    href={listing.google_maps}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      color: "#000",
+                      background: "#38bdf8",
+                      padding: "10px 14px",
+                      borderRadius: 10,
+                      textDecoration: "none",
+                      fontWeight: "bold",
+                    }}
+                  >
                     Google Maps
                   </a>
                 )}
 
-                {listing.google_reviews && (
-                  <a href={listing.google_reviews} target="_blank" rel="noreferrer" style={{ color: "#000", background: "#facc15", padding: "10px 14px", borderRadius: 10, textDecoration: "none", fontWeight: "bold" }}>
-                    Google Reviews
-                  </a>
-                )}
-
-                <button onClick={() => upvote(listing.id, listing.upvotes || 0)} style={{ padding: "10px 14px", borderRadius: 10, border: 0 }}>
+                <button
+                  onClick={() => upvote(listing.id, listing.upvotes || 0)}
+                  style={{
+                    padding: "10px 14px",
+                    borderRadius: 10,
+                    border: 0,
+                  }}
+                >
                   👍 {listing.upvotes || 0}
                 </button>
               </div>
@@ -263,14 +361,61 @@ export default function App() {
 
       <h2>Submit a Tip</h2>
 
-      <form onSubmit={submitTip} style={{ display: "grid", gap: 12, maxWidth: 700 }}>
-        <input style={fieldStyle} placeholder="Place name" value={formData.place_name} onChange={(e) => setFormData({ ...formData, place_name: e.target.value })} required />
-        <input style={fieldStyle} placeholder="Country" value={formData.country} onChange={(e) => setFormData({ ...formData, country: e.target.value })} required />
-        <input style={fieldStyle} placeholder="City" value={formData.city} onChange={(e) => setFormData({ ...formData, city: e.target.value })} required />
-        <input style={fieldStyle} placeholder="Location / area" value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })} />
+      <form
+        onSubmit={submitTip}
+        style={{
+          display: "grid",
+          gap: 12,
+          maxWidth: 700,
+        }}
+      >
+        <input
+          style={fieldStyle}
+          placeholder="Place name"
+          value={formData.place_name}
+          onChange={(e) =>
+            setFormData({ ...formData, place_name: e.target.value })
+          }
+          required
+        />
+
+        <select
+          style={fieldStyle}
+          value={formData.country}
+          onChange={(e) =>
+            setFormData({ ...formData, country: e.target.value })
+          }
+          required
+        >
+          <option value="">Select country</option>
+          {europeanCountries.map((country) => (
+            <option key={country} value={country}>
+              {country}
+            </option>
+          ))}
+        </select>
+
+        <input
+          style={fieldStyle}
+          placeholder="City"
+          value={formData.city}
+          onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+          required
+        />
+
+        <input
+          style={fieldStyle}
+          placeholder="Location / area"
+          value={formData.location}
+          onChange={(e) =>
+            setFormData({ ...formData, location: e.target.value })
+          }
+          required
+        />
 
         <div style={fieldStyle}>
           <strong>Activity type</strong>
+
           {activityTypes.map((type) => (
             <label key={type} style={{ display: "block", marginTop: 8 }}>
               <input
@@ -283,61 +428,152 @@ export default function App() {
           ))}
         </div>
 
-        <select style={fieldStyle} value={formData.price_range} onChange={(e) => setFormData({ ...formData, price_range: e.target.value })}>
+        <select
+          style={fieldStyle}
+          value={formData.price_range}
+          onChange={(e) =>
+            setFormData({ ...formData, price_range: e.target.value })
+          }
+          required
+        >
           <option value="1">£</option>
           <option value="2">££</option>
           <option value="3">£££</option>
           <option value="4">££££</option>
         </select>
 
-        <textarea style={fieldStyle} placeholder="Brief description" rows="5" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} required />
-        <input style={fieldStyle} placeholder="Google Maps link" value={formData.google_maps} onChange={(e) => setFormData({ ...formData, google_maps: e.target.value })} />
-        <input style={fieldStyle} placeholder="Google Reviews link" value={formData.google_reviews} onChange={(e) => setFormData({ ...formData, google_reviews: e.target.value })} />
-        <input style={fieldStyle} placeholder="Image URL" value={formData.image_url} onChange={(e) => setFormData({ ...formData, image_url: e.target.value })} />
-        <input style={fieldStyle} type="date" value={formData.last_visited} onChange={(e) => setFormData({ ...formData, last_visited: e.target.value })} />
+        <textarea
+          style={fieldStyle}
+          placeholder="Brief description"
+          rows="5"
+          value={formData.description}
+          onChange={(e) =>
+            setFormData({ ...formData, description: e.target.value })
+          }
+          required
+        />
 
-        <label><input type="checkbox" required /> I am not a bot</label>
+        <input
+          style={fieldStyle}
+          placeholder="Google Maps link"
+          value={formData.google_maps}
+          onChange={(e) =>
+            setFormData({ ...formData, google_maps: e.target.value })
+          }
+          required
+        />
 
-        <button style={{ padding: 16, background: "#facc15", color: "#000", border: 0, borderRadius: 12, fontWeight: "bold", fontSize: 16 }}>
+        <input
+          style={fieldStyle}
+          type="file"
+          accept="image/*"
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              image_file: e.target.files[0],
+            })
+          }
+          required
+        />
+
+        <input
+          style={fieldStyle}
+          type="date"
+          value={formData.last_visited}
+          onChange={(e) =>
+            setFormData({ ...formData, last_visited: e.target.value })
+          }
+          required
+        />
+
+        <label>
+          <input type="checkbox" required /> I am not a bot
+        </label>
+
+        <button
+          style={{
+            padding: 16,
+            background: "#facc15",
+            color: "#000",
+            border: 0,
+            borderRadius: 12,
+            fontWeight: "bold",
+            fontSize: 16,
+          }}
+        >
           Submit Recommendation
         </button>
       </form>
 
       {showAdmin && (
-        <section style={{ marginTop: 60, padding: 20, background: "#111827", borderRadius: 16 }}>
+        <section
+          style={{
+            marginTop: 60,
+            padding: 20,
+            background: "#111827",
+            borderRadius: 16,
+          }}
+        >
           <h2>Admin Approval Dashboard</h2>
 
           {!session ? (
-            <form onSubmit={signIn} style={{ display: "grid", gap: 12, maxWidth: 400 }}>
-              <input style={fieldStyle} placeholder="Admin email" onChange={(e) => setEmail(e.target.value)} />
-              <input style={fieldStyle} type="password" placeholder="Password" onChange={(e) => setPassword(e.target.value)} />
+            <form
+              onSubmit={signIn}
+              style={{ display: "grid", gap: 12, maxWidth: 400 }}
+            >
+              <input
+                style={fieldStyle}
+                placeholder="Admin email"
+                onChange={(e) => setEmail(e.target.value)}
+              />
+
+              <input
+                style={fieldStyle}
+                type="password"
+                placeholder="Password"
+                onChange={(e) => setPassword(e.target.value)}
+              />
+
               <button>Login</button>
             </form>
           ) : (
             <>
-              <button onClick={() => supabase.auth.signOut().then(() => setSession(null))}>
+              <button
+                onClick={() => supabase.auth.signOut().then(() => setSession(null))}
+              >
                 Logout
               </button>
 
               <h3>Pending / All Submissions</h3>
 
               {adminListings.map((item) => (
-                <div key={item.id} style={{ background: "#1e293b", marginTop: 12, padding: 16, borderRadius: 12 }}>
+                <div
+                  key={item.id}
+                  style={{
+                    background: "#1e293b",
+                    marginTop: 12,
+                    padding: 16,
+                    borderRadius: 12,
+                  }}
+                >
                   <strong>{item.place_name}</strong>
-                  <p>{item.city}, {item.country}</p>
+                  <p>
+                    {item.city}, {item.country}
+                  </p>
                   <p>{item.activity_type}</p>
                   <p>{item.description}</p>
                   <p>Status: {item.approved ? "Approved" : "Pending"}</p>
 
                   {!item.approved && (
-                    <button onClick={() => approveListing(item.id)} style={{ marginRight: 8 }}>
+                    <button
+                      onClick={() => approveListing(item.id)}
+                      style={{ marginRight: 8 }}
+                    >
                       Approve
                     </button>
                   )}
 
-                  <button onClick={() => deleteListing(item.id)}>
-                    Delete
-                  </button>
+                  <button onClick={() => deleteListing(item.id)}>Delete</button>
                 </div>
               ))}
             </>
