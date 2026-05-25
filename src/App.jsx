@@ -16,7 +16,7 @@ const COUNTRIES = [
 ];
 
 const ACTIVITY_TYPES = [
-  "Hidden gems","Local culture","Breakfast/Brunch","Lunch","Dinner","Sports bars","Pub/Bar","Craft Ales","Cocktails",
+  "Hidden gems","Local culture","Breakfast/Brunch","Coffee","Lunch","Dinner","Sports bars","Pub/Bar","Craft Ales","Cocktails",
   "Open late","Good for large groups","Airport hotels","Day rooms","Golf clubs","Padel"
 ];
 
