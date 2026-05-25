@@ -359,6 +359,8 @@ export default function App() {
         <button
           type="submit"
           style={{
+            color: "#000",
+            background: "#fff"
             padding: "14px",
             borderRadius: "10px",
             border: "none",
