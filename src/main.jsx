@@ -1,296 +1,161 @@
-import React, { useMemo, useState } from 'react';
-import { createRoot } from 'react-dom/client';
-import {
-  Search,
-  MapPin,
-  Hotel,
-  Utensils,
-  Martini,
-  Trophy,
-  Landmark,
-  Globe2,
-  Star,
-  Plane,
-  Clock,
-  Users,
-  Music,
-  Compass
-} from 'lucide-react';
-import './styles.css';
+import React, { useMemo, useState } from "react"; import { Search, MapPin, Globe2, Plane, Clock, Users, Trophy, Compass, Star, ThumbsUp, ThumbsDown, MessageCircle, Navigation, Send, ShieldCheck, Camera } from "lucide-react";
 
-const places = [
-  {
-    name: 'The Plaza Hotel',
-    country: 'USA',
-    city: 'New York',
-    type: 'Hotels',
-    description: 'Classic luxury hotel close to Central Park and Fifth Avenue.',
-    area: 'Midtown Manhattan',
-    tag: 'Iconic stay'
-  },
-  {
-    name: "Joe's Pizza",
-    country: 'USA',
-    city: 'New York',
-    type: 'Restaurants',
-    description: 'Famous no-frills New York slice spot. Fast, cheap and reliable after a long day.',
-    area: 'Greenwich Village',
-    tag: 'Late-night bite'
-  },
-  {
-    name: 'Football Factory at Legends',
-    country: 'USA',
-    city: 'New York',
-    type: 'Places to watch sport',
-    description: 'Popular bar for watching football and international sport with travelling fans.',
-    area: 'Manhattan',
-    tag: 'Match-day pick'
-  },
-  {
-    name: 'Sensoji Temple',
-    country: 'Japan',
-    city: 'Tokyo',
-    type: 'Sites to see',
-    description: 'Historic temple area with food stalls, shops and classic Tokyo atmosphere.',
-    area: 'Asakusa',
-    tag: 'Must-see'
-  },
-  {
-    name: 'Golden Gai',
-    country: 'Japan',
-    city: 'Tokyo',
-    type: 'Bars',
-    description: 'Tiny atmospheric bars packed into narrow alleys. Great for a memorable night out.',
-    area: 'Shinjuku',
-    tag: 'After-show drinks'
-  },
-  {
-    name: 'Time Out Market',
-    country: 'Portugal',
-    city: 'Lisbon',
-    type: 'Restaurants',
-    description: 'Easy food hall option with plenty of Portuguese food choices in one place.',
-    area: 'Cais do Sodré',
-    tag: 'Crew-friendly'
-  },
-  {
-    name: 'Carmo Rooftop',
-    country: 'Portugal',
-    city: 'Lisbon',
-    type: 'Bars',
-    description: 'Relaxed rooftop drinks with city views, good for winding down after travel.',
-    area: 'Chiado',
-    tag: 'Views'
-  },
-  {
-    name: 'Edinburgh Castle',
-    country: 'Scotland',
-    city: 'Edinburgh',
-    type: 'Sites to see',
-    description: 'Iconic castle overlooking the city, ideal for first-time visitors with limited time.',
-    area: 'Old Town',
-    tag: 'Classic landmark'
-  },
-  {
-    name: 'Jodd Fairs Night Market',
-    country: 'Thailand',
-    city: 'Bangkok',
-    type: 'Fun things to do',
-    description: 'Busy night market with food, drinks and a lively atmosphere.',
-    area: 'Rama 9',
-    tag: 'Night market'
-  }
-];
+const countries = [ { country: "United Kingdom", cities: ["Aberdeen", "Glasgow", "Edinburgh", "Newcastle", "Sunderland", "Sheffield", "Leeds", "Nottingham", "Manchester", "Liverpool", "Birmingham", "Cardiff", "London"] }, { country: "France", cities: ["Paris", "Lyon"] }, { country: "Spain", cities: ["Madrid", "Barcelona"] }, { country: "Portugal", cities: ["Lisbon", "Porto"] }, { country: "Netherlands", cities: ["Amsterdam"] }, { country: "Belgium", cities: ["Brussels"] }, { country: "Luxembourg", cities: ["Luxembourg"] }, { country: "Czechia", cities: ["Prague"] }, { country: "Germany", cities: ["Berlin", "Munich", "Dusseldorf", "Cologne", "Mannheim", "Stuttgart", "Hamburg", "Frankfurt"] }, { country: "Switzerland", cities: ["Zurich"] }, { country: "Austria", cities: ["Zurich", "Salzburg"] }, { country: "Hungary", cities: ["Budapest"] }, { country: "Romania", cities: ["Bucharest"] }, { country: "Poland", cities: ["Warsaw", "Lodz", "Kraken"] }, { country: "Norway", cities: ["Oslo", "Bergen"] }, { country: "Sweden", cities: ["Stockholm", "Gottenburg"] }, { country: "Denmark", cities: ["Copenhagen"] }, { country: "Finland", cities: ["Helsinki"] }, { country: "Italy", cities: ["Milan", "Rome", "Naples"] }, { country: "Greece", cities: ["Athens"] } ];
 
-const activityTypes = [
-  'All',
-  'Hotels',
-  'Restaurants',
-  'Bars',
-  'Places to watch sport',
-  'Fun things to do',
-  'Sites to see'
-];
+const activityTypes = ["All", "Hidden gems", "Local culture", "Breakfast/Brunch", "Lunch", "Dinner", "Sports bars", "Open late", "Good for large groups", "Airport hotels", "Day rooms", "Golf clubs", "Padel"]; const priceRanges = ["All", "£", "££", "£££", "££££"];
 
-const featuredCities = ['Tokyo', 'Bangkok', 'Lisbon', 'New York', 'Edinburgh'];
+const listings = [ { id: 1, name: "Example Sports Bar", country: "United Kingdom", city: "Manchester", location: "City centre", activityType: "Sports bars", description: "Example listing for watching live sport. Replace with a real recommendation.", priceRange: "££", rating: 4.5, upvotes: 0, downvotes: 0, comments: [], image: "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=900&q=80", googleReviews: "https://www.google.com/search?q=Manchester+sports+bar+reviews", approved: true, lastVisited: "2026-01" }, { id: 2, name: "Example Late Night Food", country: "Portugal", city: "Lisbon", location: "Central Lisbon", activityType: "Open late", description: "Example listing for late-night food after travel, work or a show. Replace with a real recommendation.", priceRange: "££", rating: 4.4, upvotes: 0, downvotes: 0, comments: [], image: "https://images.unsplash.com/photo-1555881400-74d7acaacd8b?auto=format&fit=crop&w=900&q=80", googleReviews: "https://www.google.com/search?q=Lisbon+late+night+food+reviews", approved: true, lastVisited: "2026-01" }, { id: 3, name: "Example Local Culture Spot", country: "United Kingdom", city: "Edinburgh", location: "Old Town", activityType: "Local culture", description: "Example listing for a cultural place to visit on a day off. Replace with a real recommendation.", priceRange: "££", rating: 4.6, upvotes: 0, downvotes: 0, comments: [], image: "https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=900&q=80", googleReviews: "https://www.google.com/search?q=Edinburgh+Old+Town+reviews", approved: true, lastVisited: "2026-01" } ];
 
-const roadiePicks = [
-  {
-    title: 'Best late-night food',
-    text: 'Quick places to eat when restaurants are closing and everyone is starving.',
-    icon: Clock
-  },
-  {
-    title: 'Crew-friendly spots',
-    text: 'Easy places for groups, tired travellers and people carrying too many bags.',
-    icon: Users
-  },
-  {
-    title: 'Watch the match',
-    text: 'Bars and venues showing football, rugby, boxing, F1 and big live sport.',
-    icon: Trophy
-  },
-  {
-    title: 'Day-off ideas',
-    text: 'Sites, markets, walks and local things worth doing when you finally get time off.',
-    icon: Compass
-  }
-];
+export default function TheRoadieBible() { const [search, setSearch] = useState(""); const [country, setCountry] = useState("All"); const [city, setCity] = useState("All"); const [activityType, setActivityType] = useState("All"); const [priceRange, setPriceRange] = useState("All"); const [sortBy, setSortBy] = useState("Highest rated"); const [showSubmitForm, setShowSubmitForm] = useState(false); const [antiBotChecked, setAntiBotChecked] = useState(false);
 
-const iconMap = {
-  Hotels: Hotel,
-  Restaurants: Utensils,
-  Bars: Martini,
-  'Places to watch sport': Trophy,
-  'Fun things to do': Music,
-  'Sites to see': Landmark
-};
+const countryNames = useMemo(() => ["All", ...countries.map((item) => item.country)], []); const availableCities = useMemo(() => { if (country === "All") return ["All", ...countries.flatMap((item) => item.cities)]; const selected = countries.find((item) => item.country === country); return ["All", ...(selected ? selected.cities : [])]; }, [country]);
 
-function App() {
-  const [search, setSearch] = useState('');
-  const [country, setCountry] = useState('All');
-  const [city, setCity] = useState('All');
-  const [type, setType] = useState('All');
+const filteredListings = listings .filter((listing) => { const text = ${listing.name} ${listing.country} ${listing.city} ${listing.location} ${listing.activityType} ${listing.description}.toLowerCase(); return ( listing.approved && text.includes(search.toLowerCase()) && (country === "All" || listing.country === country) && (city === "All" || listing.city === city) && (activityType === "All" || listing.activityType === activityType) && (priceRange === "All" || listing.priceRange === priceRange) ); }) .sort((a, b) => { if (sortBy === "Highest rated") return b.rating - a.rating; if (sortBy === "Most upvoted") return b.upvotes - a.upvotes; return a.name.localeCompare(b.name); });
 
-  const countries = useMemo(() => ['All', ...new Set(places.map((p) => p.country))], []);
-  const cities = useMemo(() => {
-    const filtered = country === 'All' ? places : places.filter((p) => p.country === country);
-    return ['All', ...new Set(filtered.map((p) => p.city))];
-  }, [country]);
+const handleSubmit = (event) => { event.preventDefault(); if (!antiBotChecked) return alert("Please tick the anti-bot box before submitting."); alert("Recommendation submitted for approval. Once approved by you, it can appear on the site."); setShowSubmitForm(false); };
 
-  const filteredPlaces = places.filter((place) => {
-    const searchableText = `${place.name} ${place.country} ${place.city} ${place.type} ${place.description} ${place.area} ${place.tag}`.toLowerCase();
-    return (
-      searchableText.includes(search.toLowerCase()) &&
-      (country === 'All' || place.country === country) &&
-      (city === 'All' || place.city === city) &&
-      (type === 'All' || place.type === type)
-    );
-  });
+return ( <div className="min-h-screen bg-zinc-950 text-white"> <header className="relative overflow-hidden border-b border-white/10"> <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(251,191,36,0.25),_transparent_35%),radial-gradient(circle_at_bottom_right,_rgba(59,130,246,0.2),_transparent_35%)]" /> <nav className="relative max-w-7xl mx-auto px-4 py-5 flex items-center justify-between"> <div className="flex items-center gap-3"> <div className="p-2 rounded-2xl bg-amber-400 text-zinc-950"><Globe2 className="w-7 h-7" /></div> <div><p className="text-2xl font-black">The Roadie Bible</p><p className="text-xs uppercase tracking-[0.25em] text-amber-300">Global travel help guide</p></div> </div> <button onClick={() => setShowSubmitForm(true)} className="rounded-full bg-white text-zinc-950 hover:bg-amber-300 px-5 py-3 font-bold">Submit a tip</button> </nav>
 
-  return (
-    <div className="site">
-      <header className="hero">
-        <nav className="nav">
-          <div className="brand">
-            <div className="brandIcon"><Globe2 size={30} /></div>
-            <div>
-              <div className="brandName">The Roadie Bible</div>
-              <div className="brandSub">Global travel help guide</div>
-            </div>
-          </div>
-          <button className="lightButton">Submit a tip</button>
-        </nav>
+<section className="relative max-w-7xl mx-auto px-4 py-16 md:py-24 grid lg:grid-cols-2 gap-10 items-center">
+      <div>
+        <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/40 bg-amber-300/10 px-4 py-2 text-amber-200 mb-6"><Plane className="w-4 h-4" /> Built for travellers, touring crew and people who never stop moving.</div>
+        <h1 className="text-5xl md:text-7xl font-black tracking-tight leading-none mb-6">Find the good stuff before you land.</h1>
+        <p className="text-lg md:text-xl text-zinc-300 max-w-xl mb-8">Search trusted places to eat, stay, drink, watch sport and spend your day off.</p>
+        <div className="bg-white/10 backdrop-blur rounded-3xl border border-white/10 p-4 shadow-2xl">
+          <div className="relative"><Search className="absolute left-4 top-4 w-5 h-5 text-zinc-400" /><input className="w-full bg-white text-zinc-950 rounded-2xl py-4 pl-12 pr-4 outline-none text-lg" placeholder="Search city, country, venue, activity..." value={search} onChange={(e) => setSearch(e.target.value)} /></div>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        {[[Clock, "Open late"], [Users, "Large groups"], [Trophy, "Watch sport"], [Compass, "Hidden gems"]].map(([Icon, title]) => <div key={title} className="rounded-3xl border border-white/10 bg-white/10 p-5"><div className="w-12 h-12 rounded-2xl bg-amber-400 text-zinc-950 flex items-center justify-center mb-5"><Icon className="w-6 h-6" /></div><h3 className="font-bold text-lg">{title}</h3></div>)}
+      </div>
+    </section>
+  </header>
 
-        <section className="heroGrid">
-          <div>
-            <div className="eyebrow"><Plane size={16} /> Built for travellers, touring crew and people who never stop moving.</div>
-            <h1>Find the good stuff before you land.</h1>
-            <p className="heroText">Search hotels, restaurants, bars, sports bars, sights and day-off ideas by country, city or activity type.</p>
-            <div className="searchBox">
-              <Search className="searchIcon" size={22} />
-              <input
-                placeholder="Search Tokyo bars, Lisbon food, Bangkok sport..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-          </div>
+  <main className="max-w-7xl mx-auto px-4 py-10">
+    <section className="bg-white text-zinc-950 rounded-3xl shadow-2xl p-5 md:p-6 mb-10 -mt-14 relative z-10">
+      <div className="grid md:grid-cols-6 gap-4">
+        <button onClick={() => alert("Near me will work once location services and a live database are connected.")} className="rounded-2xl p-4 bg-zinc-950 text-white font-bold flex items-center justify-center gap-2"><Navigation className="w-4 h-4" />Near me</button>
+        <select className="border rounded-2xl p-4 bg-zinc-50" value={country} onChange={(e) => { setCountry(e.target.value); setCity("All"); }}>{countryNames.map((item) => <option key={item}>{item}</option>)}</select>
+        <select className="border rounded-2xl p-4 bg-zinc-50" value={city} onChange={(e) => setCity(e.target.value)}>{availableCities.map((item) => <option key={item}>{item}</option>)}</select>
+        <select className="border rounded-2xl p-4 bg-zinc-50" value={activityType} onChange={(e) => setActivityType(e.target.value)}>{activityTypes.map((item) => <option key={item}>{item}</option>)}</select>
+        <select className="border rounded-2xl p-4 bg-zinc-50" value={priceRange} onChange={(e) => setPriceRange(e.target.value)}>{priceRanges.map((item) => <option key={item}>{item}</option>)}</select>
+        <select className="border rounded-2xl p-4 bg-zinc-50" value={sortBy} onChange={(e) => setSortBy(e.target.value)}><option>Highest rated</option><option>Most upvoted</option><option>A-Z</option></select>
+      </div>
+    </section>
 
-          <div className="picksGrid">
-            {roadiePicks.map((pick) => {
-              const Icon = pick.icon;
-              return (
-                <div className="pickCard" key={pick.title}>
-                  <div className="pickIcon"><Icon size={26} /></div>
-                  <h3>{pick.title}</h3>
-                  <p>{pick.text}</p>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      </header>
+    <section className="mb-8"><h2 className="text-2xl md:text-3xl font-black mb-4">Activity types</h2><div className="flex flex-wrap gap-2">{activityTypes.map((item) => <button key={item} className={activityType === item ? "rounded-full bg-amber-400 text-zinc-950 px-4 py-2 font-bold" : "rounded-full border border-white/20 text-white hover:bg-white hover:text-zinc-950 px-4 py-2"} onClick={() => setActivityType(item)}>{item}</button>)}</div></section>
 
-      <main className="main">
-        <section className="filters">
-          <select value={country} onChange={(e) => { setCountry(e.target.value); setCity('All'); }}>
-            {countries.map((item) => <option key={item}>{item}</option>)}
-          </select>
-          <select value={city} onChange={(e) => setCity(e.target.value)}>
-            {cities.map((item) => <option key={item}>{item}</option>)}
-          </select>
-          <select value={type} onChange={(e) => setType(e.target.value)}>
-            {activityTypes.map((item) => <option key={item}>{item}</option>)}
-          </select>
-        </section>
+    <section className="mb-4"><h2 className="text-2xl md:text-3xl font-black">Approved recommendations</h2><p className="text-zinc-400">Showing {filteredListings.length} result{filteredListings.length === 1 ? "" : "s"}</p></section>
 
-        <section className="sectionHead">
-          <div>
-            <h2>Featured cities</h2>
-            <p>Start with trusted road-tested favourites.</p>
-          </div>
-        </section>
+    <section className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+      {filteredListings.map((listing) => (
+        <article key={listing.id} className="rounded-3xl bg-white text-zinc-950 shadow-xl overflow-hidden">
+          <div className="h-48 bg-zinc-800 relative overflow-hidden"><img src={listing.image} alt={listing.name} className="w-full h-full object-cover" /><div className="absolute top-4 right-4 rounded-full bg-zinc-950 text-white px-3 py-1 text-sm font-bold">{listing.priceRange}</div></div>
+          <div className="p-5"><div className="flex items-center justify-between mb-2"><span className="text-xs font-bold uppercase tracking-wide text-amber-700">{listing.activityType}</span><span className="text-sm font-bold flex items-center gap-1"><Star className="w-4 h-4" /> {listing.rating}</span></div><h3 className="text-xl font-black mb-2">{listing.name}</h3><p className="text-zinc-600 mb-5">{listing.description}</p><div className="text-sm text-zinc-500 flex items-center gap-2 mb-4"><MapPin className="w-4 h-4" />{listing.location}, {listing.city}, {listing.country}</div><div className="grid grid-cols-3 gap-2 mb-4 text-sm"><button className="rounded-xl bg-zinc-100 px-3 py-2 flex items-center justify-center gap-1"><ThumbsUp className="w-4 h-4" /> {listing.upvotes}</button><button className="rounded-xl bg-zinc-100 px-3 py-2 flex items-center justify-center gap-1"><ThumbsDown className="w-4 h-4" /> {listing.downvotes}</button><button className="rounded-xl bg-zinc-100 px-3 py-2 flex items-center justify-center gap-1"><MessageCircle className="w-4 h-4" /> {listing.comments.length}</button></div><a href={listing.googleReviews} target="_blank" rel="noreferrer" className="block text-center rounded-xl bg-zinc-950 text-white py-3 font-bold">Google reviews</a></div>
+        </article>
+      ))}
+    </section>
+  </main>
 
-        <section className="cityButtons">
-          {featuredCities.map((item) => (
-            <button
-              key={item}
-              onClick={() => {
-                setCity(item);
-                const found = places.find((p) => p.city === item);
-                if (found) setCountry(found.country);
-              }}
-            >
-              <MapPin size={16} /> {item}
-            </button>
-          ))}
-        </section>
-
-        <section className="typeButtons">
-          {activityTypes.map((item) => (
-            <button key={item} className={type === item ? 'active' : ''} onClick={() => setType(item)}>{item}</button>
-          ))}
-        </section>
-
-        <section className="sectionHead">
-          <div>
-            <h2>Roadie-approved places</h2>
-            <p>Showing {filteredPlaces.length} result{filteredPlaces.length === 1 ? '' : 's'}</p>
-          </div>
-        </section>
-
-        <section className="cards">
-          {filteredPlaces.map((place) => {
-            const Icon = iconMap[place.type] || MapPin;
-            return (
-              <article className="placeCard" key={`${place.name}-${place.city}`}>
-                <div className="cardTop">
-                  <div className="cardIcon"><Icon size={26} /></div>
-                  <span>{place.tag}</span>
-                </div>
-                <div className="cardBody">
-                  <div className="cardType">{place.type}</div>
-                  <h3>{place.name}</h3>
-                  <p>{place.description}</p>
-                  <div className="location"><MapPin size={16} /> {place.area}, {place.city}, {place.country}</div>
-                </div>
-              </article>
-            );
-          })}
-        </section>
-
-        {filteredPlaces.length === 0 && <div className="empty">No places found. Try changing your filters or search term.</div>}
-
-        <section className="submitSection">
-          <Star size={42} />
-          <h2>Know a place every traveller should know?</h2>
-          <p>The Roadie Bible is built on real recommendations: places that work when you are tired, hungry, lost, jet-lagged or trying to watch a match in another country.</p>
-          <button>Add your recommendation</button>
-        </section>
-      </main>
+  {showSubmitForm && (
+    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+      <form onSubmit={handleSubmit} className="bg-white text-zinc-950 rounded-3xl p-6 w-full max-w-2xl max-h-[90vh] overflow-auto">
+        <h2 className="text-3xl font-black mb-2">Submit a recommendation</h2><p className="text-zinc-600 mb-6">Submissions go to an approval queue before appearing on the site.</p>
+        <div className="grid md:grid-cols-2 gap-4">
+          <select required className="border rounded-2xl p-4"><option value="">Country</option>{countries.map((item) => <option key={item.country}>{item.country}</option>)}</select>
+          <input required className="border rounded-2xl p-4" placeholder="City" />
+          <select required className="border rounded-2xl p-4"><option value="">Activity type</option>{activityTypes.filter((x) => x !== "All").map((item) => <option key={item}>{item}</option>)}</select>
+          <select required className="border rounded-2xl p-4"><option value="">Price range</option>{priceRanges.filter((x) => x !== "All").map((item) => <option key={item}>{item}</option>)}</select>
+          <input required className="border rounded-2xl p-4" placeholder="Location / area" />
+          <input required type="date" className="border rounded-2xl p-4" placeholder="Last visited" />
+          <label className="border rounded-2xl p-4 md:col-span-2 flex items-center gap-3"><Camera className="w-5 h-5" /> Picture upload placeholder</label>
+          <textarea required className="border rounded-2xl p-4 md:col-span-2" rows="4" placeholder="Brief description" />
+          <label className="md:col-span-2 flex items-center gap-3 bg-zinc-100 rounded-2xl p-4"><input type="checkbox" checked={antiBotChecked} onChange={(e) => setAntiBotChecked(e.target.checked)} /><ShieldCheck className="w-5 h-5" /> I am not a bot</label>
+        </div>
+        <div className="flex gap-3 mt-6"><button type="submit" className="rounded-full bg-amber-400 text-zinc-950 px-6 py-3 font-black flex items-center gap-2"><Send className="w-4 h-4" /> Submit for approval</button><button type="button" onClick={() => setShowSubmitForm(false)} className="rounded-full bg-zinc-200 px-6 py-3 font-bold">Cancel</button></div>
+      </form>
     </div>
-  );
-}
+  )}
+</div>
 
-createRoot(document.getElementById('root')).render(<App />);
+); } import React, { useMemo, useState } from "react"; import { Search, MapPin, Globe2, Plane, Clock, Users, Trophy, Compass, Star, ThumbsUp, ThumbsDown, MessageCircle, Navigation, Send, ShieldCheck, Camera } from "lucide-react";
+
+const countries = [ { country: "United Kingdom", cities: ["Aberdeen", "Glasgow", "Edinburgh", "Newcastle", "Sunderland", "Sheffield", "Leeds", "Nottingham", "Manchester", "Liverpool", "Birmingham", "Cardiff", "London"] }, { country: "France", cities: ["Paris", "Lyon"] }, { country: "Spain", cities: ["Madrid", "Barcelona"] }, { country: "Portugal", cities: ["Lisbon", "Porto"] }, { country: "Netherlands", cities: ["Amsterdam"] }, { country: "Belgium", cities: ["Brussels"] }, { country: "Luxembourg", cities: ["Luxembourg"] }, { country: "Czechia", cities: ["Prague"] }, { country: "Germany", cities: ["Berlin", "Munich", "Dusseldorf", "Cologne", "Mannheim", "Stuttgart", "Hamburg", "Frankfurt"] }, { country: "Switzerland", cities: ["Zurich"] }, { country: "Austria", cities: ["Zurich", "Salzburg"] }, { country: "Hungary", cities: ["Budapest"] }, { country: "Romania", cities: ["Bucharest"] }, { country: "Poland", cities: ["Warsaw", "Lodz", "Kraken"] }, { country: "Norway", cities: ["Oslo", "Bergen"] }, { country: "Sweden", cities: ["Stockholm", "Gottenburg"] }, { country: "Denmark", cities: ["Copenhagen"] }, { country: "Finland", cities: ["Helsinki"] }, { country: "Italy", cities: ["Milan", "Rome", "Naples"] }, { country: "Greece", cities: ["Athens"] } ];
+
+const activityTypes = ["All", "Hidden gems", "Local culture", "Breakfast/Brunch", "Lunch", "Dinner", "Sports bars", "Open late", "Good for large groups", "Airport hotels", "Day rooms", "Golf clubs", "Padel"]; const priceRanges = ["All", "£", "££", "£££", "££££"];
+
+const listings = [ { id: 1, name: "Example Sports Bar", country: "United Kingdom", city: "Manchester", location: "City centre", activityType: "Sports bars", description: "Example listing for watching live sport. Replace with a real recommendation.", priceRange: "££", rating: 4.5, upvotes: 0, downvotes: 0, comments: [], image: "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=900&q=80", googleReviews: "https://www.google.com/search?q=Manchester+sports+bar+reviews", approved: true, lastVisited: "2026-01" }, { id: 2, name: "Example Late Night Food", country: "Portugal", city: "Lisbon", location: "Central Lisbon", activityType: "Open late", description: "Example listing for late-night food after travel, work or a show. Replace with a real recommendation.", priceRange: "££", rating: 4.4, upvotes: 0, downvotes: 0, comments: [], image: "https://images.unsplash.com/photo-1555881400-74d7acaacd8b?auto=format&fit=crop&w=900&q=80", googleReviews: "https://www.google.com/search?q=Lisbon+late+night+food+reviews", approved: true, lastVisited: "2026-01" }, { id: 3, name: "Example Local Culture Spot", country: "United Kingdom", city: "Edinburgh", location: "Old Town", activityType: "Local culture", description: "Example listing for a cultural place to visit on a day off. Replace with a real recommendation.", priceRange: "££", rating: 4.6, upvotes: 0, downvotes: 0, comments: [], image: "https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=900&q=80", googleReviews: "https://www.google.com/search?q=Edinburgh+Old+Town+reviews", approved: true, lastVisited: "2026-01" } ];
+
+export default function TheRoadieBible() { const [search, setSearch] = useState(""); const [country, setCountry] = useState("All"); const [city, setCity] = useState("All"); const [activityType, setActivityType] = useState("All"); const [priceRange, setPriceRange] = useState("All"); const [sortBy, setSortBy] = useState("Highest rated"); const [showSubmitForm, setShowSubmitForm] = useState(false); const [antiBotChecked, setAntiBotChecked] = useState(false);
+
+const countryNames = useMemo(() => ["All", ...countries.map((item) => item.country)], []); const availableCities = useMemo(() => { if (country === "All") return ["All", ...countries.flatMap((item) => item.cities)]; const selected = countries.find((item) => item.country === country); return ["All", ...(selected ? selected.cities : [])]; }, [country]);
+
+const filteredListings = listings .filter((listing) => { const text = ${listing.name} ${listing.country} ${listing.city} ${listing.location} ${listing.activityType} ${listing.description}.toLowerCase(); return ( listing.approved && text.includes(search.toLowerCase()) && (country === "All" || listing.country === country) && (city === "All" || listing.city === city) && (activityType === "All" || listing.activityType === activityType) && (priceRange === "All" || listing.priceRange === priceRange) ); }) .sort((a, b) => { if (sortBy === "Highest rated") return b.rating - a.rating; if (sortBy === "Most upvoted") return b.upvotes - a.upvotes; return a.name.localeCompare(b.name); });
+
+const handleSubmit = (event) => { event.preventDefault(); if (!antiBotChecked) return alert("Please tick the anti-bot box before submitting."); alert("Recommendation submitted for approval. Once approved by you, it can appear on the site."); setShowSubmitForm(false); };
+
+return ( <div className="min-h-screen bg-zinc-950 text-white"> <header className="relative overflow-hidden border-b border-white/10"> <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(251,191,36,0.25),_transparent_35%),radial-gradient(circle_at_bottom_right,_rgba(59,130,246,0.2),_transparent_35%)]" /> <nav className="relative max-w-7xl mx-auto px-4 py-5 flex items-center justify-between"> <div className="flex items-center gap-3"> <div className="p-2 rounded-2xl bg-amber-400 text-zinc-950"><Globe2 className="w-7 h-7" /></div> <div><p className="text-2xl font-black">The Roadie Bible</p><p className="text-xs uppercase tracking-[0.25em] text-amber-300">Global travel help guide</p></div> </div> <button onClick={() => setShowSubmitForm(true)} className="rounded-full bg-white text-zinc-950 hover:bg-amber-300 px-5 py-3 font-bold">Submit a tip</button> </nav>
+
+<section className="relative max-w-7xl mx-auto px-4 py-16 md:py-24 grid lg:grid-cols-2 gap-10 items-center">
+      <div>
+        <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/40 bg-amber-300/10 px-4 py-2 text-amber-200 mb-6"><Plane className="w-4 h-4" /> Built for travellers, touring crew and people who never stop moving.</div>
+        <h1 className="text-5xl md:text-7xl font-black tracking-tight leading-none mb-6">Find the good stuff before you land.</h1>
+        <p className="text-lg md:text-xl text-zinc-300 max-w-xl mb-8">Search trusted places to eat, stay, drink, watch sport and spend your day off.</p>
+        <div className="bg-white/10 backdrop-blur rounded-3xl border border-white/10 p-4 shadow-2xl">
+          <div className="relative"><Search className="absolute left-4 top-4 w-5 h-5 text-zinc-400" /><input className="w-full bg-white text-zinc-950 rounded-2xl py-4 pl-12 pr-4 outline-none text-lg" placeholder="Search city, country, venue, activity..." value={search} onChange={(e) => setSearch(e.target.value)} /></div>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        {[[Clock, "Open late"], [Users, "Large groups"], [Trophy, "Watch sport"], [Compass, "Hidden gems"]].map(([Icon, title]) => <div key={title} className="rounded-3xl border border-white/10 bg-white/10 p-5"><div className="w-12 h-12 rounded-2xl bg-amber-400 text-zinc-950 flex items-center justify-center mb-5"><Icon className="w-6 h-6" /></div><h3 className="font-bold text-lg">{title}</h3></div>)}
+      </div>
+    </section>
+  </header>
+
+  <main className="max-w-7xl mx-auto px-4 py-10">
+    <section className="bg-white text-zinc-950 rounded-3xl shadow-2xl p-5 md:p-6 mb-10 -mt-14 relative z-10">
+      <div className="grid md:grid-cols-6 gap-4">
+        <button onClick={() => alert("Near me will work once location services and a live database are connected.")} className="rounded-2xl p-4 bg-zinc-950 text-white font-bold flex items-center justify-center gap-2"><Navigation className="w-4 h-4" />Near me</button>
+        <select className="border rounded-2xl p-4 bg-zinc-50" value={country} onChange={(e) => { setCountry(e.target.value); setCity("All"); }}>{countryNames.map((item) => <option key={item}>{item}</option>)}</select>
+        <select className="border rounded-2xl p-4 bg-zinc-50" value={city} onChange={(e) => setCity(e.target.value)}>{availableCities.map((item) => <option key={item}>{item}</option>)}</select>
+        <select className="border rounded-2xl p-4 bg-zinc-50" value={activityType} onChange={(e) => setActivityType(e.target.value)}>{activityTypes.map((item) => <option key={item}>{item}</option>)}</select>
+        <select className="border rounded-2xl p-4 bg-zinc-50" value={priceRange} onChange={(e) => setPriceRange(e.target.value)}>{priceRanges.map((item) => <option key={item}>{item}</option>)}</select>
+        <select className="border rounded-2xl p-4 bg-zinc-50" value={sortBy} onChange={(e) => setSortBy(e.target.value)}><option>Highest rated</option><option>Most upvoted</option><option>A-Z</option></select>
+      </div>
+    </section>
+
+    <section className="mb-8"><h2 className="text-2xl md:text-3xl font-black mb-4">Activity types</h2><div className="flex flex-wrap gap-2">{activityTypes.map((item) => <button key={item} className={activityType === item ? "rounded-full bg-amber-400 text-zinc-950 px-4 py-2 font-bold" : "rounded-full border border-white/20 text-white hover:bg-white hover:text-zinc-950 px-4 py-2"} onClick={() => setActivityType(item)}>{item}</button>)}</div></section>
+
+    <section className="mb-4"><h2 className="text-2xl md:text-3xl font-black">Approved recommendations</h2><p className="text-zinc-400">Showing {filteredListings.length} result{filteredListings.length === 1 ? "" : "s"}</p></section>
+
+    <section className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+      {filteredListings.map((listing) => (
+        <article key={listing.id} className="rounded-3xl bg-white text-zinc-950 shadow-xl overflow-hidden">
+          <div className="h-48 bg-zinc-800 relative overflow-hidden"><img src={listing.image} alt={listing.name} className="w-full h-full object-cover" /><div className="absolute top-4 right-4 rounded-full bg-zinc-950 text-white px-3 py-1 text-sm font-bold">{listing.priceRange}</div></div>
+          <div className="p-5"><div className="flex items-center justify-between mb-2"><span className="text-xs font-bold uppercase tracking-wide text-amber-700">{listing.activityType}</span><span className="text-sm font-bold flex items-center gap-1"><Star className="w-4 h-4" /> {listing.rating}</span></div><h3 className="text-xl font-black mb-2">{listing.name}</h3><p className="text-zinc-600 mb-5">{listing.description}</p><div className="text-sm text-zinc-500 flex items-center gap-2 mb-4"><MapPin className="w-4 h-4" />{listing.location}, {listing.city}, {listing.country}</div><div className="grid grid-cols-3 gap-2 mb-4 text-sm"><button className="rounded-xl bg-zinc-100 px-3 py-2 flex items-center justify-center gap-1"><ThumbsUp className="w-4 h-4" /> {listing.upvotes}</button><button className="rounded-xl bg-zinc-100 px-3 py-2 flex items-center justify-center gap-1"><ThumbsDown className="w-4 h-4" /> {listing.downvotes}</button><button className="rounded-xl bg-zinc-100 px-3 py-2 flex items-center justify-center gap-1"><MessageCircle className="w-4 h-4" /> {listing.comments.length}</button></div><a href={listing.googleReviews} target="_blank" rel="noreferrer" className="block text-center rounded-xl bg-zinc-950 text-white py-3 font-bold">Google reviews</a></div>
+        </article>
+      ))}
+    </section>
+  </main>
+
+  {showSubmitForm && (
+    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+      <form onSubmit={handleSubmit} className="bg-white text-zinc-950 rounded-3xl p-6 w-full max-w-2xl max-h-[90vh] overflow-auto">
+        <h2 className="text-3xl font-black mb-2">Submit a recommendation</h2><p className="text-zinc-600 mb-6">Submissions go to an approval queue before appearing on the site.</p>
+        <div className="grid md:grid-cols-2 gap-4">
+          <select required className="border rounded-2xl p-4"><option value="">Country</option>{countries.map((item) => <option key={item.country}>{item.country}</option>)}</select>
+          <input required className="border rounded-2xl p-4" placeholder="City" />
+          <select required className="border rounded-2xl p-4"><option value="">Activity type</option>{activityTypes.filter((x) => x !== "All").map((item) => <option key={item}>{item}</option>)}</select>
+          <select required className="border rounded-2xl p-4"><option value="">Price range</option>{priceRanges.filter((x) => x !== "All").map((item) => <option key={item}>{item}</option>)}</select>
+          <input required className="border rounded-2xl p-4" placeholder="Location / area" />
+          <input required type="date" className="border rounded-2xl p-4" placeholder="Last visited" />
+          <label className="border rounded-2xl p-4 md:col-span-2 flex items-center gap-3"><Camera className="w-5 h-5" /> Picture upload placeholder</label>
+          <textarea required className="border rounded-2xl p-4 md:col-span-2" rows="4" placeholder="Brief description" />
+          <label className="md:col-span-2 flex items-center gap-3 bg-zinc-100 rounded-2xl p-4"><input type="checkbox" checked={antiBotChecked} onChange={(e) => setAntiBotChecked(e.target.checked)} /><ShieldCheck className="w-5 h-5" /> I am not a bot</label>
+        </div>
+        <div className="flex gap-3 mt-6"><button type="submit" className="rounded-full bg-amber-400 text-zinc-950 px-6 py-3 font-black flex items-center gap-2"><Send className="w-4 h-4" /> Submit for approval</button><button type="button" onClick={() => setShowSubmitForm(false)} className="rounded-full bg-zinc-200 px-6 py-3 font-bold">Cancel</button></div>
+      </form>
+    </div>
+  )}
+</div>
+
+); }
