@@ -7,17 +7,17 @@ const supabase = createClient(
 );
 
 const COUNTRIES = [
-  "Albania","Andorra","Austria","Belarus","Belgium","Bosnia and Herzegovina","Bulgaria",
-  "Croatia","Cyprus","Czechia","Denmark","Estonia","Finland","France","Germany","Greece",
-  "Hungary","Iceland","Ireland","Italy","Kosovo","Latvia","Liechtenstein","Lithuania",
-  "Luxembourg","Malta","Moldova","Monaco","Montenegro","Netherlands","North Macedonia",
-  "Norway","Poland","Portugal","Romania","San Marino","Serbia","Slovakia","Slovenia",
-  "Spain","Sweden","Switzerland","Ukraine","United Kingdom","Vatican City"
+  "Albania", "Andorra", "Austria", "Belarus", "Belgium", "Bosnia and Herzegovina", "Bulgaria",
+  "Croatia", "Cyprus", "Czechia", "Denmark", "Estonia", "Finland", "France", "Germany", "Greece",
+  "Hungary", "Iceland", "Ireland", "Italy", "Kosovo", "Latvia", "Liechtenstein", "Lithuania",
+  "Luxembourg", "Malta", "Moldova", "Monaco", "Montenegro", "Netherlands", "North Macedonia",
+  "Norway", "Poland", "Portugal", "Romania", "San Marino", "Serbia", "Slovakia", "Slovenia",
+  "Spain", "Sweden", "Switzerland", "Ukraine", "United Kingdom", "Vatican City"
 ];
 
 const ACTIVITY_TYPES = [
-  "Hidden gems","Local culture","Breakfast/Brunch","Coffee","Lunch","Dinner","Sports bars","Pub/Bar","Craft Ales","Cocktails",
-  "Open late","Good for large groups","Airport hotels","Day rooms","Golf clubs","Padel"
+  "Hidden gems", "Local culture", "Breakfast/Brunch", "Lunch", "Dinner", "Sports bars",
+  "Open late", "Good for large groups", "Airport hotels", "Day rooms", "Golf clubs", "Padel"
 ];
 
 const emptyForm = {
@@ -34,20 +34,23 @@ const emptyForm = {
 
 export default function App() {
   const isAdmin =
-  window.location.pathname === "/admin" ||
-  window.location.search.includes("admin");
+    window.location.pathname === "/admin" ||
+    window.location.search.includes("admin");
 
   const [listings, setListings] = useState([]);
   const [pendingListings, setPendingListings] = useState([]);
   const [comments, setComments] = useState([]);
   const [form, setForm] = useState(emptyForm);
+
   const [search, setSearch] = useState("");
   const [countryFilter, setCountryFilter] = useState("");
   const [activityFilter, setActivityFilter] = useState("");
   const [priceFilter, setPriceFilter] = useState("");
+
   const [session, setSession] = useState(null);
   const [adminEmail, setAdminEmail] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
+
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState(null);
   const [commentDrafts, setCommentDrafts] = useState({});
@@ -133,8 +136,8 @@ export default function App() {
         place_name: form.place_name,
         country: form.country,
         city: form.city,
-        google_maps: form.maps_link,
         maps_link: form.maps_link,
+        google_maps: form.maps_link,
         description: form.description,
         activity_types: form.activity_types,
         price_range: form.price_range,
@@ -186,7 +189,7 @@ export default function App() {
       place_name: listing.place_name || "",
       country: listing.country || "",
       city: listing.city || "",
-      maps_link: listing.maps_link || "",
+      maps_link: listing.maps_link || listing.google_maps || "",
       description: listing.description || "",
       price_range: listing.price_range || "£",
       visit_date: listing.visit_date || "",
@@ -206,7 +209,10 @@ export default function App() {
   async function saveEdit(id) {
     const { error } = await supabase
       .from("listings")
-      .update(editForm)
+      .update({
+        ...editForm,
+        google_maps: editForm.maps_link,
+      })
       .eq("id", id);
 
     if (error) return alert(error.message);
@@ -218,13 +224,39 @@ export default function App() {
   }
 
   async function vote(listing, direction) {
-    const field = direction === "up" ? "upvotes" : "downvotes";
-    const current = listing[field] || 0;
+    const voteKey = `roadie-vote-${listing.id}`;
+    const previousVote = localStorage.getItem(voteKey);
 
-    await supabase
+    let newUpvotes = listing.upvotes || 0;
+    let newDownvotes = listing.downvotes || 0;
+
+    if (previousVote === direction) {
+      if (direction === "up") newUpvotes = Math.max(0, newUpvotes - 1);
+      if (direction === "down") newDownvotes = Math.max(0, newDownvotes - 1);
+      localStorage.removeItem(voteKey);
+    } else if (previousVote === "up" && direction === "down") {
+      newUpvotes = Math.max(0, newUpvotes - 1);
+      newDownvotes += 1;
+      localStorage.setItem(voteKey, "down");
+    } else if (previousVote === "down" && direction === "up") {
+      newDownvotes = Math.max(0, newDownvotes - 1);
+      newUpvotes += 1;
+      localStorage.setItem(voteKey, "up");
+    } else {
+      if (direction === "up") newUpvotes += 1;
+      if (direction === "down") newDownvotes += 1;
+      localStorage.setItem(voteKey, direction);
+    }
+
+    const { error } = await supabase
       .from("listings")
-      .update({ [field]: current + 1 })
+      .update({
+        upvotes: newUpvotes,
+        downvotes: newDownvotes,
+      })
       .eq("id", listing.id);
+
+    if (error) return alert("Vote error: " + error.message);
 
     fetchListings();
   }
@@ -255,12 +287,12 @@ export default function App() {
     return listings.filter((listing) => {
       const text = `${listing.place_name} ${listing.city} ${listing.country} ${listing.description}`.toLowerCase();
 
-      const matchesSearch = text.includes(search.toLowerCase());
-      const matchesCountry = !countryFilter || listing.country === countryFilter;
-      const matchesActivity = !activityFilter || listing.activity_types?.includes(activityFilter);
-      const matchesPrice = !priceFilter || listing.price_range === priceFilter;
-
-      return matchesSearch && matchesCountry && matchesActivity && matchesPrice;
+      return (
+        text.includes(search.toLowerCase()) &&
+        (!countryFilter || listing.country === countryFilter) &&
+        (!activityFilter || listing.activity_types?.includes(activityFilter)) &&
+        (!priceFilter || listing.price_range === priceFilter)
+      );
     });
   }, [listings, search, countryFilter, activityFilter, priceFilter]);
 
@@ -272,13 +304,28 @@ export default function App() {
     <div className="min-h-screen bg-zinc-950 text-white">
       <header className="relative overflow-hidden border-b border-white/10">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(251,191,36,0.28),_transparent_35%),radial-gradient(circle_at_bottom_right,_rgba(59,130,246,0.22),_transparent_35%)]" />
+
+        <nav className="relative max-w-7xl mx-auto px-4 py-6 flex items-center justify-between gap-4">
+          <a href="/" className="text-2xl font-black text-amber-300 tracking-tight">
+            The Roadie Bible
+          </a>
+
+          <div className="flex gap-5 text-sm md:text-base font-bold">
+            <a href="#about" className="hover:text-amber-300">About</a>
+            <a href="#submit" className="hover:text-amber-300">Add a Recommendation</a>
+            <a href="#contact" className="hover:text-amber-300">Contact</a>
+          </div>
+        </nav>
+
         <div className="relative max-w-7xl mx-auto px-4 py-16 md:py-24">
           <p className="text-amber-300 uppercase tracking-[0.25em] text-sm font-bold mb-4">
-            The Roadie Bible
+            Global travel help guide
           </p>
+
           <h1 className="text-5xl md:text-7xl font-black leading-none mb-6">
             Find the good stuff before you land.
           </h1>
+
           <p className="text-xl text-zinc-300 max-w-2xl">
             Hotels, food, sport, hidden gems and road-tested places for touring crew and global travellers.
           </p>
@@ -314,6 +361,17 @@ export default function App() {
           </div>
         </section>
 
+        <section id="about" className="my-12 bg-white/10 border border-white/10 rounded-3xl p-6">
+          <h2 className="text-3xl font-black mb-4">About The Roadie Bible</h2>
+          <p className="text-lg text-zinc-200 leading-relaxed">
+            If you're looking for a Wetherspoon or Starbucks, Google might be your best bet.
+            If you want peer reviewed hangouts and things to do around the globe, that have
+            been tried and tested by the people who spend the longest on the road, then dive
+            in and search away. Add your own suggestions and up/down vote existing listings
+            to help the rest of the community find the best places around.
+          </p>
+        </section>
+
         <h2 className="text-3xl font-black mb-6">Approved Recommendations</h2>
 
         <section className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
@@ -339,7 +397,12 @@ export default function App() {
 
                 <div className="flex items-center justify-between mb-4">
                   <span className="font-black text-lg">{listing.price_range}</span>
-                  <a href={listing.maps_link || listing.google_maps} target="_blank" rel="noreferrer" className="bg-zinc-950 text-white rounded-xl px-4 py-2 font-bold">
+                  <a
+                    href={listing.maps_link || listing.google_maps}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="bg-zinc-950 text-white rounded-xl px-4 py-2 font-bold"
+                  >
                     Google Maps
                   </a>
                 </div>
@@ -402,7 +465,7 @@ export default function App() {
           ))}
         </section>
 
-        <section className="bg-white/10 border border-white/10 rounded-3xl p-6 mb-16">
+        <section id="submit" className="bg-white/10 border border-white/10 rounded-3xl p-6 mb-16">
           <h2 className="text-3xl font-black mb-6">Submit a Tip</h2>
 
           <form onSubmit={submitRecommendation} className="grid gap-4">
@@ -451,6 +514,16 @@ export default function App() {
           </form>
         </section>
 
+        <section id="contact" className="my-12 bg-white/10 border border-white/10 rounded-3xl p-6">
+          <h2 className="text-3xl font-black mb-4">Contact</h2>
+          <p className="text-lg text-zinc-200 mb-2">
+            For admin, corrections, removals or general enquiries:
+          </p>
+          <a href="mailto:admin@roadiebible.com" className="text-amber-400 font-black text-xl">
+            admin@roadiebible.com
+          </a>
+        </section>
+
         {isAdmin && (
           <section className="bg-zinc-900 border border-white/10 rounded-3xl p-6">
             <h2 className="text-3xl font-black mb-6">Admin Approval Dashboard</h2>
@@ -469,7 +542,22 @@ export default function App() {
                       <div className="grid gap-3">
                         <input className="p-3 rounded text-black" value={editForm.place_name} onChange={(e) => setEditForm({ ...editForm, place_name: e.target.value })} />
                         <input className="p-3 rounded text-black" value={editForm.city} onChange={(e) => setEditForm({ ...editForm, city: e.target.value })} />
+                        <input className="p-3 rounded text-black" value={editForm.maps_link} onChange={(e) => setEditForm({ ...editForm, maps_link: e.target.value })} />
                         <textarea className="p-3 rounded text-black" value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} />
+
+                        <div className="bg-zinc-700 rounded-xl p-3">
+                          {ACTIVITY_TYPES.map((activity) => (
+                            <label key={activity} className="flex gap-2">
+                              <input
+                                type="checkbox"
+                                checked={editForm.activity_types.includes(activity)}
+                                onChange={() => toggleEditActivity(activity)}
+                              />
+                              {activity}
+                            </label>
+                          ))}
+                        </div>
+
                         <button onClick={() => saveEdit(listing.id)} className="bg-green-600 rounded-xl px-4 py-2 font-bold">Save Edit</button>
                       </div>
                     ) : (
