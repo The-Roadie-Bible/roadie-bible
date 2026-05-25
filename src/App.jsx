@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -6,17 +6,55 @@ const supabase = createClient(
   import.meta.env.VITE_SUPABASE_ANON_KEY
 );
 
-const fieldStyle = {
-  padding: "12px",
-  borderRadius: "10px",
-  border: "1px solid #ccc",
-  color: "#000",
-  backgroundColor: "#fff",
-  width: "100%",
-  boxSizing: "border-box",
-};
+const EUROPEAN_COUNTRIES = [
+  "Albania",
+  "Andorra",
+  "Austria",
+  "Belarus",
+  "Belgium",
+  "Bosnia and Herzegovina",
+  "Bulgaria",
+  "Croatia",
+  "Cyprus",
+  "Czech Republic",
+  "Denmark",
+  "Estonia",
+  "Finland",
+  "France",
+  "Germany",
+  "Greece",
+  "Hungary",
+  "Iceland",
+  "Ireland",
+  "Italy",
+  "Kosovo",
+  "Latvia",
+  "Liechtenstein",
+  "Lithuania",
+  "Luxembourg",
+  "Malta",
+  "Moldova",
+  "Monaco",
+  "Montenegro",
+  "Netherlands",
+  "North Macedonia",
+  "Norway",
+  "Poland",
+  "Portugal",
+  "Romania",
+  "San Marino",
+  "Serbia",
+  "Slovakia",
+  "Slovenia",
+  "Spain",
+  "Sweden",
+  "Switzerland",
+  "Ukraine",
+  "United Kingdom",
+  "Vatican City",
+];
 
-const activityTypes = [
+const ACTIVITY_TYPES = [
   "Hidden gems",
   "Local culture",
   "Breakfast/Brunch",
@@ -31,555 +69,517 @@ const activityTypes = [
   "Padel",
 ];
 
-const europeanCountries = [
-  "Albania", "Andorra", "Austria", "Belarus", "Belgium", "Bosnia and Herzegovina",
-  "Bulgaria", "Croatia", "Cyprus", "Czechia", "Denmark", "Estonia", "Finland",
-  "France", "Germany", "Greece", "Hungary", "Iceland", "Ireland", "Italy",
-  "Kosovo", "Latvia", "Liechtenstein", "Lithuania", "Luxembourg", "Malta",
-  "Moldova", "Monaco", "Montenegro", "Netherlands", "North Macedonia", "Norway",
-  "Poland", "Portugal", "Romania", "San Marino", "Serbia", "Slovakia",
-  "Slovenia", "Spain", "Sweden", "Switzerland", "Ukraine", "United Kingdom",
-  "Vatican City"
-];
-
 export default function App() {
   const [listings, setListings] = useState([]);
-  const [adminListings, setAdminListings] = useState([]);
-  const [session, setSession] = useState(null);
-  const [showAdmin] = useState(window.location.search.includes("admin"));
+  const [pendingListings, setPendingListings] = useState([]);
+
+  const [placeName, setPlaceName] = useState("");
+  const [country, setCountry] = useState("");
+  const [city, setCity] = useState("");
+  const [mapsLink, setMapsLink] = useState("");
+  const [description, setDescription] = useState("");
+  const [selectedActivities, setSelectedActivities] = useState([]);
+  const [priceRange, setPriceRange] = useState("£");
+  const [visitDate, setVisitDate] = useState("");
+  const [imageFile, setImageFile] = useState(null);
 
   const [search, setSearch] = useState("");
-  const [activityFilter, setActivityFilter] = useState("All");
-  const [priceFilter, setPriceFilter] = useState("All");
+  const [selectedCountryFilter, setSelectedCountryFilter] = useState("");
+  const [selectedActivityFilter, setSelectedActivityFilter] = useState("");
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-
-  const [formData, setFormData] = useState({
-    place_name: "",
-    country: "",
-    city: "",
-    activity_type: [],
-    price_range: "1",
-    description: "",
-    location: "",
-    google_maps: "",
-    image_file: null,
-    last_visited: "",
-  });
+  const isAdmin = window.location.pathname === "/admin";
 
   useEffect(() => {
     fetchListings();
 
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      if (data.session) fetchAdminListings();
-    });
+    if (isAdmin) {
+      fetchPendingListings();
+    }
   }, []);
 
   async function fetchListings() {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("listings")
       .select("*")
       .eq("approved", true)
       .order("created_at", { ascending: false });
 
-    setListings(data || []);
+    if (!error) {
+      setListings(data || []);
+    }
   }
 
-  async function fetchAdminListings() {
-    const { data } = await supabase
+  async function fetchPendingListings() {
+    const { data, error } = await supabase
       .from("listings")
       .select("*")
+      .eq("approved", false)
       .order("created_at", { ascending: false });
 
-    setAdminListings(data || []);
+    if (!error) {
+      setPendingListings(data || []);
+    }
   }
 
-  function toggleActivityType(type) {
-    setFormData({
-      ...formData,
-      activity_type: formData.activity_type.includes(type)
-        ? formData.activity_type.filter((item) => item !== type)
-        : [...formData.activity_type, type],
-    });
+  function toggleActivity(activity) {
+    if (selectedActivities.includes(activity)) {
+      setSelectedActivities(
+        selectedActivities.filter((a) => a !== activity)
+      );
+    } else {
+      setSelectedActivities([...selectedActivities, activity]);
+    }
   }
 
-  async function submitTip(e) {
-    e.preventDefault();
+  async function uploadImage(file) {
+    if (!file) return "";
 
-    if (!formData.image_file) {
-      return alert("Please upload an image");
-    }
+    const fileName = `${Date.now()}-${file.name}`;
 
-    if (formData.activity_type.length === 0) {
-      return alert("Please choose at least one activity type");
-    }
-
-    const fileName = `${Date.now()}-${formData.image_file.name}`;
-
-    const { error: uploadError } = await supabase.storage
+    const { error } = await supabase.storage
       .from("listing-images")
-      .upload(fileName, formData.image_file);
+      .upload(fileName, file);
 
-    if (uploadError) {
-      return alert("Image upload error: " + uploadError.message);
+    if (error) {
+      alert("Image upload error: " + error.message);
+      return "";
     }
 
     const {
       data: { publicUrl },
-    } = supabase.storage.from("listing-images").getPublicUrl(fileName);
+    } = supabase.storage
+      .from("listing-images")
+      .getPublicUrl(fileName);
+
+    return publicUrl;
+  }
+
+  async function submitRecommendation(e) {
+    e.preventDefault();
+
+    if (!imageFile) {
+      alert("Please upload an image");
+      return;
+    }
+
+    const imageUrl = await uploadImage(imageFile);
+
+    if (!imageUrl) return;
 
     const { error } = await supabase.from("listings").insert([
       {
-        place_name: formData.place_name,
-        country: formData.country,
-        city: formData.city,
-        activity_type: formData.activity_type.join(", "),
-        price_range: Number(formData.price_range),
-        description: formData.description,
-        location: formData.location,
-        google_maps: formData.google_maps,
-        image_url: publicUrl,
-        last_visited: formData.last_visited,
+        place_name: placeName,
+        country,
+        city,
+        maps_link: mapsLink,
+        description,
+        activity_types: selectedActivities,
+        price_range: priceRange,
+        image_url: imageUrl,
+        visit_date: visitDate,
         approved: false,
-        upvotes: 0,
-        downvotes: 0,
       },
     ]);
 
-    if (error) return alert("Error submitting tip: " + error.message);
+    if (error) {
+      alert("Error submitting tip: " + error.message);
+      return;
+    }
 
     alert("Tip submitted for approval!");
 
-    setFormData({
-      place_name: "",
-      country: "",
-      city: "",
-      activity_type: [],
-      price_range: "1",
-      description: "",
-      location: "",
-      google_maps: "",
-      image_file: null,
-      last_visited: "",
-    });
+    setPlaceName("");
+    setCountry("");
+    setCity("");
+    setMapsLink("");
+    setDescription("");
+    setSelectedActivities([]);
+    setPriceRange("£");
+    setVisitDate("");
+    setImageFile(null);
 
-    e.target.reset();
-  }
-
-  async function signIn(e) {
-    e.preventDefault();
-
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) return alert(error.message);
-
-    setSession(data.session);
-    fetchAdminListings();
+    document.getElementById("image-upload").value = "";
   }
 
   async function approveListing(id) {
-    await supabase.from("listings").update({ approved: true }).eq("id", id);
-    fetchListings();
-    fetchAdminListings();
+    const { error } = await supabase
+      .from("listings")
+      .update({ approved: true })
+      .eq("id", id);
+
+    if (!error) {
+      fetchPendingListings();
+      fetchListings();
+    }
   }
 
   async function deleteListing(id) {
-    await supabase.from("listings").delete().eq("id", id);
-    fetchListings();
-    fetchAdminListings();
-  }
+    const confirmDelete = confirm("Delete this submission?");
 
-  async function upvote(id, currentVotes) {
-    await supabase
+    if (!confirmDelete) return;
+
+    const { error } = await supabase
       .from("listings")
-      .update({ upvotes: currentVotes + 1 })
+      .delete()
       .eq("id", id);
 
-    fetchListings();
+    if (!error) {
+      fetchPendingListings();
+      fetchListings();
+    }
   }
 
-  const filteredListings = listings.filter((listing) => {
-    const text = `${listing.place_name} ${listing.country} ${listing.city} ${listing.location} ${listing.activity_type} ${listing.description}`.toLowerCase();
+  const filteredListings = useMemo(() => {
+    return listings.filter((listing) => {
+      const matchesSearch =
+        listing.place_name
+          ?.toLowerCase()
+          .includes(search.toLowerCase()) ||
+        listing.city?.toLowerCase().includes(search.toLowerCase()) ||
+        listing.country?.toLowerCase().includes(search.toLowerCase());
 
-    const matchesSearch = text.includes(search.toLowerCase());
-    const matchesActivity =
-      activityFilter === "All" || listing.activity_type?.includes(activityFilter);
-    const matchesPrice =
-      priceFilter === "All" || Number(listing.price_range) === Number(priceFilter);
+      const matchesCountry =
+        !selectedCountryFilter ||
+        listing.country === selectedCountryFilter;
 
-    return matchesSearch && matchesActivity && matchesPrice;
-  });
+      const matchesActivity =
+        !selectedActivityFilter ||
+        listing.activity_types?.includes(selectedActivityFilter);
+
+      return matchesSearch && matchesCountry && matchesActivity;
+    });
+  }, [
+    listings,
+    search,
+    selectedCountryFilter,
+    selectedActivityFilter,
+  ]);
 
   return (
-    <div
-      style={{
-        background: "#0f172a",
-        minHeight: "100vh",
-        color: "white",
-        padding: 24,
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-      <h1 style={{ fontSize: 52, marginBottom: 8 }}>The Roadie Bible</h1>
+    <div className="min-h-screen bg-[#0b1220] text-white p-6">
+      <div className="max-w-6xl mx-auto">
+        <h1 className="text-5xl font-bold mb-2">
+          The Roadie Bible
+        </h1>
 
-      <p style={{ fontSize: 18, marginBottom: 30 }}>
-        Global travel help guide for touring crew & travellers
-      </p>
+        <p className="text-xl text-gray-300 mb-10">
+          Global travel help guide for touring crew & travellers
+        </p>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-          gap: 12,
-          marginBottom: 30,
-        }}
-      >
-        <input
-          style={fieldStyle}
-          placeholder="Search city, country, venue..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        <div className="grid md:grid-cols-3 gap-4 mb-10">
+          <input
+            type="text"
+            placeholder="Search city, country or venue"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="p-3 rounded bg-white text-black"
+          />
 
-        <select
-          style={fieldStyle}
-          value={activityFilter}
-          onChange={(e) => setActivityFilter(e.target.value)}
-        >
-          <option>All</option>
-          {activityTypes.map((type) => (
-            <option key={type}>{type}</option>
-          ))}
-        </select>
-
-        <select
-          style={fieldStyle}
-          value={priceFilter}
-          onChange={(e) => setPriceFilter(e.target.value)}
-        >
-          <option value="All">All prices</option>
-          <option value="1">£</option>
-          <option value="2">££</option>
-          <option value="3">£££</option>
-          <option value="4">££££</option>
-        </select>
-      </div>
-
-      <h2>Approved Recommendations</h2>
-
-      <div
-        style={{
-          display: "grid",
-          gap: 20,
-          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-          marginBottom: 60,
-        }}
-      >
-        {filteredListings.map((listing) => (
-          <div
-            key={listing.id}
-            style={{
-              background: "#1e293b",
-              borderRadius: 18,
-              overflow: "hidden",
-            }}
+          <select
+            value={selectedCountryFilter}
+            onChange={(e) =>
+              setSelectedCountryFilter(e.target.value)
+            }
+            className="p-3 rounded bg-white text-black"
           >
-            {listing.image_url ? (
-              <img
-                src={listing.image_url}
-                alt={listing.place_name}
-                style={{ width: "100%", height: 200, objectFit: "cover" }}
-              />
-            ) : (
-              <div
-                style={{
-                  height: 200,
-                  background: "#334155",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                No image yet
-              </div>
-            )}
+            <option value="">All countries</option>
 
-            <div style={{ padding: 20 }}>
-              <h3 style={{ fontSize: 24, marginTop: 0 }}>
-                {listing.place_name}
-              </h3>
+            {EUROPEAN_COUNTRIES.map((country) => (
+              <option key={country} value={country}>
+                {country}
+              </option>
+            ))}
+          </select>
 
-              <p>{listing.location}</p>
-              <p>
-                {listing.city}, {listing.country}
-              </p>
-              <p>
-                <strong>{listing.activity_type}</strong>
-              </p>
-              <p>{"£".repeat(listing.price_range || 1)}</p>
-              <p>{listing.description}</p>
+          <select
+            value={selectedActivityFilter}
+            onChange={(e) =>
+              setSelectedActivityFilter(e.target.value)
+            }
+            className="p-3 rounded bg-white text-black"
+          >
+            <option value="">All activity types</option>
 
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                {listing.google_maps && (
+            {ACTIVITY_TYPES.map((activity) => (
+              <option key={activity} value={activity}>
+                {activity}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <h2 className="text-3xl font-bold mb-6">
+          Approved Recommendations
+        </h2>
+
+        <div className="grid md:grid-cols-2 gap-6 mb-16">
+          {filteredListings.map((listing) => (
+            <div
+              key={listing.id}
+              className="bg-[#111827] rounded-2xl overflow-hidden border border-gray-800"
+            >
+              {listing.image_url && (
+                <img
+                  src={listing.image_url}
+                  alt={listing.place_name}
+                  className="w-full h-64 object-cover"
+                />
+              )}
+
+              <div className="p-5">
+                <h3 className="text-2xl font-bold mb-2">
+                  {listing.place_name}
+                </h3>
+
+                <p className="text-gray-300 mb-3">
+                  {listing.city}, {listing.country}
+                </p>
+
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {listing.activity_types?.map((activity) => (
+                    <span
+                      key={activity}
+                      className="bg-yellow-500 text-black text-sm px-3 py-1 rounded-full"
+                    >
+                      {activity}
+                    </span>
+                  ))}
+                </div>
+
+                <p className="mb-4 text-gray-200">
+                  {listing.description}
+                </p>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-yellow-400 font-bold">
+                    {listing.price_range}
+                  </span>
+
                   <a
-                    href={listing.google_maps}
+                    href={listing.maps_link}
                     target="_blank"
                     rel="noreferrer"
-                    style={{
-                      color: "#000",
-                      background: "#38bdf8",
-                      padding: "10px 14px",
-                      borderRadius: 10,
-                      textDecoration: "none",
-                      fontWeight: "bold",
-                    }}
+                    className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg"
                   >
-                    Google Maps
+                    Open Maps
                   </a>
-                )}
-
-                <button
-                  onClick={() => upvote(listing.id, listing.upvotes || 0)}
-                  style={{
-                    padding: "10px 14px",
-                    borderRadius: 10,
-                    border: 0,
-                  }}
-                >
-                  👍 {listing.upvotes || 0}
-                </button>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
-
-      <h2>Submit a Tip</h2>
-
-      <form
-        onSubmit={submitTip}
-        style={{
-          display: "grid",
-          gap: 12,
-          maxWidth: 700,
-        }}
-      >
-        <input
-          style={fieldStyle}
-          placeholder="Place name"
-          value={formData.place_name}
-          onChange={(e) =>
-            setFormData({ ...formData, place_name: e.target.value })
-          }
-          required
-        />
-
-        <select
-          style={fieldStyle}
-          value={formData.country}
-          onChange={(e) =>
-            setFormData({ ...formData, country: e.target.value })
-          }
-          required
-        >
-          <option value="">Select country</option>
-          {europeanCountries.map((country) => (
-            <option key={country} value={country}>
-              {country}
-            </option>
-          ))}
-        </select>
-
-        <input
-          style={fieldStyle}
-          placeholder="City"
-          value={formData.city}
-          onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-          required
-        />
-
-        <input
-          style={fieldStyle}
-          placeholder="Location / area"
-          value={formData.location}
-          onChange={(e) =>
-            setFormData({ ...formData, location: e.target.value })
-          }
-          required
-        />
-
-        <div style={fieldStyle}>
-          <strong>Activity type</strong>
-
-          {activityTypes.map((type) => (
-            <label key={type} style={{ display: "block", marginTop: 8 }}>
-              <input
-                type="checkbox"
-                checked={formData.activity_type.includes(type)}
-                onChange={() => toggleActivityType(type)}
-              />{" "}
-              {type}
-            </label>
           ))}
         </div>
 
-        <select
-          style={fieldStyle}
-          value={formData.price_range}
-          onChange={(e) =>
-            setFormData({ ...formData, price_range: e.target.value })
-          }
-          required
-        >
-          <option value="1">£</option>
-          <option value="2">££</option>
-          <option value="3">£££</option>
-          <option value="4">££££</option>
-        </select>
+        <div className="bg-[#111827] p-6 rounded-2xl border border-gray-800 mb-12">
+          <h2 className="text-3xl font-bold mb-6">
+            Submit a Tip
+          </h2>
 
-        <textarea
-          style={fieldStyle}
-          placeholder="Brief description"
-          rows="5"
-          value={formData.description}
-          onChange={(e) =>
-            setFormData({ ...formData, description: e.target.value })
-          }
-          required
-        />
+          <form
+            onSubmit={submitRecommendation}
+            className="space-y-4"
+          >
+            <input
+              type="text"
+              placeholder="Place name"
+              value={placeName}
+              onChange={(e) => setPlaceName(e.target.value)}
+              required
+              className="w-full p-3 rounded bg-white text-black"
+            />
 
-        <input
-          style={fieldStyle}
-          placeholder="Google Maps link"
-          value={formData.google_maps}
-          onChange={(e) =>
-            setFormData({ ...formData, google_maps: e.target.value })
-          }
-          required
-        />
-
-        <input
-          style={fieldStyle}
-          type="file"
-          accept="image/*"
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              image_file: e.target.files[0],
-            })
-          }
-          required
-        />
-
-        <input
-          style={fieldStyle}
-          type="date"
-          value={formData.last_visited}
-          onChange={(e) =>
-            setFormData({ ...formData, last_visited: e.target.value })
-          }
-          required
-        />
-
-        <label>
-          <input type="checkbox" required /> I am not a bot
-        </label>
-
-        <button
-          style={{
-            padding: 16,
-            background: "#facc15",
-            color: "#000",
-            border: 0,
-            borderRadius: 12,
-            fontWeight: "bold",
-            fontSize: 16,
-          }}
-        >
-          Submit Recommendation
-        </button>
-      </form>
-
-      {showAdmin && (
-        <section
-          style={{
-            marginTop: 60,
-            padding: 20,
-            background: "#111827",
-            borderRadius: 16,
-          }}
-        >
-          <h2>Admin Approval Dashboard</h2>
-
-          {!session ? (
-            <form
-              onSubmit={signIn}
-              style={{ display: "grid", gap: 12, maxWidth: 400 }}
+            <select
+              value={country}
+              onChange={(e) => setCountry(e.target.value)}
+              required
+              className="w-full p-3 rounded bg-white text-black"
             >
-              <input
-                style={fieldStyle}
-                placeholder="Admin email"
-                onChange={(e) => setEmail(e.target.value)}
-              />
+              <option value="">Select country</option>
+
+              {EUROPEAN_COUNTRIES.map((countryName) => (
+                <option key={countryName} value={countryName}>
+                  {countryName}
+                </option>
+              ))}
+            </select>
+
+            <input
+              type="text"
+              placeholder="City"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              required
+              className="w-full p-3 rounded bg-white text-black"
+            />
+
+            <input
+              type="url"
+              placeholder="Google Maps link"
+              value={mapsLink}
+              onChange={(e) => setMapsLink(e.target.value)}
+              required
+              className="w-full p-3 rounded bg-white text-black"
+            />
+
+            <div className="bg-[#1f2937] p-4 rounded-xl">
+              <p className="font-bold mb-3">
+                Activity Types
+              </p>
+
+              <div className="grid md:grid-cols-3 gap-2">
+                {ACTIVITY_TYPES.map((activity) => (
+                  <label
+                    key={activity}
+                    className="flex items-center gap-2"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedActivities.includes(
+                        activity
+                      )}
+                      onChange={() => toggleActivity(activity)}
+                    />
+
+                    <span>{activity}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <select
+              value={priceRange}
+              onChange={(e) => setPriceRange(e.target.value)}
+              required
+              className="w-full p-3 rounded bg-white text-black"
+            >
+              <option value="£">£ Budget</option>
+              <option value="££">££ Mid-range</option>
+              <option value="£££">£££ Premium</option>
+            </select>
+
+            <textarea
+              placeholder="Brief description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              required
+              rows={5}
+              className="w-full p-3 rounded bg-white text-black"
+            />
+
+            <div>
+              <label className="block mb-2 font-bold">
+                Upload Image
+              </label>
 
               <input
-                style={fieldStyle}
-                type="password"
-                placeholder="Password"
-                onChange={(e) => setPassword(e.target.value)}
+                id="image-upload"
+                type="file"
+                accept="image/*"
+                required
+                onChange={(e) =>
+                  setImageFile(e.target.files[0])
+                }
+                className="w-full p-3 rounded bg-white text-black"
               />
+            </div>
 
-              <button>Login</button>
-            </form>
-          ) : (
-            <>
-              <button
-                onClick={() => supabase.auth.signOut().then(() => setSession(null))}
-              >
-                Logout
-              </button>
+            <input
+              type="date"
+              value={visitDate}
+              onChange={(e) => setVisitDate(e.target.value)}
+              required
+              className="w-full p-3 rounded bg-white text-black"
+            />
 
-              <h3>Pending / All Submissions</h3>
+            <label className="flex items-center gap-2">
+              <input type="checkbox" required />
+              <span>I am not a bot</span>
+            </label>
 
-              {adminListings.map((item) => (
+            <button
+              type="submit"
+              className="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-4 rounded-xl text-lg"
+            >
+              Submit Recommendation
+            </button>
+          </form>
+        </div>
+
+        {isAdmin && (
+          <div className="bg-[#111827] p-6 rounded-2xl border border-gray-800">
+            <h2 className="text-3xl font-bold mb-6">
+              Admin Approval Dashboard
+            </h2>
+
+            <div className="space-y-6">
+              {pendingListings.map((listing) => (
                 <div
-                  key={item.id}
-                  style={{
-                    background: "#1e293b",
-                    marginTop: 12,
-                    padding: 16,
-                    borderRadius: 12,
-                  }}
+                  key={listing.id}
+                  className="bg-[#1f2937] rounded-xl overflow-hidden"
                 >
-                  <strong>{item.place_name}</strong>
-                  <p>
-                    {item.city}, {item.country}
-                  </p>
-                  <p>{item.activity_type}</p>
-                  <p>{item.description}</p>
-                  <p>Status: {item.approved ? "Approved" : "Pending"}</p>
-
-                  {!item.approved && (
-                    <button
-                      onClick={() => approveListing(item.id)}
-                      style={{ marginRight: 8 }}
-                    >
-                      Approve
-                    </button>
+                  {listing.image_url && (
+                    <img
+                      src={listing.image_url}
+                      alt={listing.place_name}
+                      className="w-full h-64 object-cover"
+                    />
                   )}
 
-                  <button onClick={() => deleteListing(item.id)}>Delete</button>
+                  <div className="p-5">
+                    <h3 className="text-2xl font-bold">
+                      {listing.place_name}
+                    </h3>
+
+                    <p className="text-gray-300 mb-2">
+                      {listing.city}, {listing.country}
+                    </p>
+
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {listing.activity_types?.map((activity) => (
+                        <span
+                          key={activity}
+                          className="bg-yellow-500 text-black text-sm px-3 py-1 rounded-full"
+                        >
+                          {activity}
+                        </span>
+                      ))}
+                    </div>
+
+                    <p className="mb-4">
+                      {listing.description}
+                    </p>
+
+                    <div className="flex gap-4">
+                      <button
+                        onClick={() =>
+                          approveListing(listing.id)
+                        }
+                        className="bg-green-600 hover:bg-green-500 px-5 py-2 rounded-lg font-bold"
+                      >
+                        Approve
+                      </button>
+
+                      <button
+                        onClick={() =>
+                          deleteListing(listing.id)
+                        }
+                        className="bg-red-600 hover:bg-red-500 px-5 py-2 rounded-lg font-bold"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
                 </div>
               ))}
-            </>
-          )}
-        </section>
-      )}
+
+              {pendingListings.length === 0 && (
+                <p className="text-gray-400">
+                  No pending submissions.
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
