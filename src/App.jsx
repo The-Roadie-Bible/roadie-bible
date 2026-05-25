@@ -40,7 +40,7 @@ export default function App() {
     place_name: "",
     country: "",
     city: "",
-    activity_type: "",
+    activity_type: [],
     price_range: "1",
     description: "",
     location: "",
@@ -64,12 +64,24 @@ export default function App() {
     if (!error) setListings(data || []);
   }
 
+  function toggleActivityType(type) {
+    const current = formData.activity_type;
+
+    setFormData({
+      ...formData,
+      activity_type: current.includes(type)
+        ? current.filter((item) => item !== type)
+        : [...current, type],
+    });
+  }
+
   async function submitTip(e) {
     e.preventDefault();
 
     const { error } = await supabase.from("listings").insert([
       {
         ...formData,
+        activity_type: formData.activity_type.join(", "),
         price_range: Number(formData.price_range),
         approved: false,
         upvotes: 0,
@@ -88,7 +100,7 @@ export default function App() {
       place_name: "",
       country: "",
       city: "",
-      activity_type: "",
+      activity_type: [],
       price_range: "1",
       description: "",
       location: "",
@@ -109,11 +121,13 @@ export default function App() {
   }
 
   const filteredListings = listings.filter((listing) => {
-    const text = `${listing.place_name} ${listing.country} ${listing.city} ${listing.activity_type} ${listing.description}`.toLowerCase();
+    const text =
+      `${listing.place_name} ${listing.country} ${listing.city} ${listing.activity_type} ${listing.description}`.toLowerCase();
 
     return (
       text.includes(search.toLowerCase()) &&
-      (selectedType === "All" || listing.activity_type === selectedType)
+      (selectedType === "All" ||
+        listing.activity_type?.includes(selectedType))
     );
   });
 
@@ -135,7 +149,14 @@ export default function App() {
         Global travel help guide for touring crew & travellers
       </p>
 
-      <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginBottom: "40px" }}>
+      <div
+        style={{
+          display: "flex",
+          gap: "12px",
+          flexWrap: "wrap",
+          marginBottom: "40px",
+        }}
+      >
         <input
           style={{ ...fieldStyle, maxWidth: "300px" }}
           placeholder="Search city, country or venue"
@@ -149,6 +170,7 @@ export default function App() {
           onChange={(e) => setSelectedType(e.target.value)}
         >
           <option>All</option>
+
           {activityTypes.map((type) => (
             <option key={type}>{type}</option>
           ))}
@@ -160,7 +182,7 @@ export default function App() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(280px,1fr))",
           gap: "20px",
           marginBottom: "60px",
         }}
@@ -178,21 +200,37 @@ export default function App() {
               <img
                 src={listing.image_url}
                 alt={listing.place_name}
-                style={{ width: "100%", height: "200px", objectFit: "cover" }}
+                style={{
+                  width: "100%",
+                  height: "200px",
+                  objectFit: "cover",
+                }}
               />
             )}
 
             <div style={{ padding: "20px" }}>
               <h3>{listing.place_name}</h3>
+
               <p>{listing.location}</p>
-              <p>{listing.city}, {listing.country}</p>
+
+              <p>
+                {listing.city}, {listing.country}
+              </p>
+
               <p>{listing.activity_type}</p>
+
               <p>{"£".repeat(listing.price_range || 1)}</p>
+
               <p>{listing.description}</p>
 
               {listing.google_maps && (
                 <p>
-                  <a href={listing.google_maps} target="_blank" rel="noreferrer" style={{ color: "#38bdf8" }}>
+                  <a
+                    href={listing.google_maps}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ color: "#38bdf8" }}
+                  >
                     Open in Google Maps
                   </a>
                 </p>
@@ -200,7 +238,12 @@ export default function App() {
 
               {listing.google_reviews && (
                 <p>
-                  <a href={listing.google_reviews} target="_blank" rel="noreferrer" style={{ color: "#facc15" }}>
+                  <a
+                    href={listing.google_reviews}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ color: "#facc15" }}
+                  >
                     Google Reviews
                   </a>
                 </p>
@@ -237,7 +280,12 @@ export default function App() {
           style={fieldStyle}
           placeholder="Place name"
           value={formData.place_name}
-          onChange={(e) => setFormData({ ...formData, place_name: e.target.value })}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              place_name: e.target.value,
+            })
+          }
           required
         />
 
@@ -245,7 +293,12 @@ export default function App() {
           style={fieldStyle}
           placeholder="Country"
           value={formData.country}
-          onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              country: e.target.value,
+            })
+          }
           required
         />
 
@@ -253,7 +306,12 @@ export default function App() {
           style={fieldStyle}
           placeholder="City"
           value={formData.city}
-          onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              city: e.target.value,
+            })
+          }
           required
         />
 
@@ -261,25 +319,46 @@ export default function App() {
           style={fieldStyle}
           placeholder="Location / area"
           value={formData.location}
-          onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              location: e.target.value,
+            })
+          }
         />
 
-        <select
-          style={fieldStyle}
-          value={formData.activity_type}
-          onChange={(e) => setFormData({ ...formData, activity_type: e.target.value })}
-          required
-        >
-          <option value="">Select activity type</option>
-          {activityTypes.map((type) => (
-            <option key={type}>{type}</option>
-          ))}
-        </select>
+        <div style={fieldStyle}>
+          <strong>Activity type</strong>
+
+          <div
+            style={{
+              display: "grid",
+              gap: "8px",
+              marginTop: "10px",
+            }}
+          >
+            {activityTypes.map((type) => (
+              <label key={type} style={{ color: "#000" }}>
+                <input
+                  type="checkbox"
+                  checked={formData.activity_type.includes(type)}
+                  onChange={() => toggleActivityType(type)}
+                />{" "}
+                {type}
+              </label>
+            ))}
+          </div>
+        </div>
 
         <select
           style={fieldStyle}
           value={formData.price_range}
-          onChange={(e) => setFormData({ ...formData, price_range: e.target.value })}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              price_range: e.target.value,
+            })
+          }
           required
         >
           <option value="1">£</option>
@@ -293,7 +372,12 @@ export default function App() {
           placeholder="Brief description"
           rows="4"
           value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              description: e.target.value,
+            })
+          }
           required
         />
 
@@ -301,28 +385,48 @@ export default function App() {
           style={fieldStyle}
           placeholder="Google Maps link"
           value={formData.google_maps}
-          onChange={(e) => setFormData({ ...formData, google_maps: e.target.value })}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              google_maps: e.target.value,
+            })
+          }
         />
 
         <input
           style={fieldStyle}
           placeholder="Google Reviews link"
           value={formData.google_reviews}
-          onChange={(e) => setFormData({ ...formData, google_reviews: e.target.value })}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              google_reviews: e.target.value,
+            })
+          }
         />
 
         <input
           style={fieldStyle}
           placeholder="Image URL"
           value={formData.image_url}
-          onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              image_url: e.target.value,
+            })
+          }
         />
 
         <input
           style={fieldStyle}
           type="date"
           value={formData.last_visited}
-          onChange={(e) => setFormData({ ...formData, last_visited: e.target.value })}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              last_visited: e.target.value,
+            })
+          }
         />
 
         <label style={{ color: "white" }}>
