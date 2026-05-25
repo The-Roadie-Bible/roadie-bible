@@ -33,7 +33,9 @@ const emptyForm = {
 };
 
 export default function App() {
-  const isAdmin = window.location.pathname === "/admin";
+  const isAdmin =
+  window.location.pathname === "/admin" ||
+  window.location.search.includes("admin");
 
   const [listings, setListings] = useState([]);
   const [pendingListings, setPendingListings] = useState([]);
