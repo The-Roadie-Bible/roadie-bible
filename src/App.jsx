@@ -74,7 +74,7 @@ export default function App() {
     const { data } = await supabase
       .from("listings")
       .select("*")
-      .eq("approved", false)
+      .or("approved.is.false,approved.is.null")
       .order("created_at", { ascending: false });
 
     setPendingListings(data || []);
