@@ -124,24 +124,69 @@ export default function App() {
     }));
   }
 
-  async function uploadImage(file) {
-    const fileName = `${Date.now()}-${file.name}`;
+  async function compressImage(file, maxWidth = 1400, quality = 0.75) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const reader = new FileReader();
 
-    const { error } = await supabase.storage
-      .from("listing-images")
-      .upload(fileName, file);
+    reader.onload = (e) => {
+      img.src = e.target.result;
+    };
 
-    if (error) {
-      alert("Image upload error: " + error.message);
-      return "";
-    }
+    img.onload = () => {
+      const scale = Math.min(maxWidth / img.width, 1);
+      const canvas = document.createElement("canvas");
 
-    const { data } = supabase.storage
-      .from("listing-images")
-      .getPublicUrl(fileName);
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
 
-    return data.publicUrl;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) return reject(new Error("Image compression failed"));
+
+          const compressedFile = new File(
+            [blob],
+            file.name.replace(/\.[^/.]+$/, ".jpg"),
+            { type: "image/jpeg" }
+          );
+
+          resolve(compressedFile);
+        },
+        "image/jpeg",
+        quality
+      );
+    };
+
+    img.onerror = reject;
+    reader.onerror = reject;
+
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadImage(file) {
+  const compressedFile = await compressImage(file);
+
+  const fileName = `${Date.now()}-${compressedFile.name}`;
+
+  const { error } = await supabase.storage
+    .from("listing-images")
+    .upload(fileName, compressedFile);
+
+  if (error) {
+    alert("Image upload error: " + error.message);
+    return "";
   }
+
+  const { data } = supabase.storage
+    .from("listing-images")
+    .getPublicUrl(fileName);
+
+  return data.publicUrl;
+}
 
   async function submitRecommendation(e) {
     e.preventDefault();
