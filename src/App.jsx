@@ -189,7 +189,6 @@ export default function App() {
       const emailData = await emailResponse.json();
       console.log("Email response:", emailData);
 
-      alert("Email response: " + JSON.stringify(emailData));
     } catch (emailError) {
       console.error("Email failed:", emailError);
       alert("Email failed, but tip was submitted.");
