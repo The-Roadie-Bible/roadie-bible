@@ -159,6 +159,7 @@ export default function App() {
     description: form.description,
   }),
 });
+    alert("About to send email");
     alert("Tip submitted for approval!");
     setForm(emptyForm);
     e.target.reset();
