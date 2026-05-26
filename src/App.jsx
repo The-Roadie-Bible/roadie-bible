@@ -132,6 +132,18 @@ export default function App() {
         downvotes: 0,
       },
     ]);
+    await fetch("/api/send-email", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    place_name: form.place_name,
+    city: form.city,
+    country: form.country,
+    description: form.description,
+  }),
+});
 
     if (error) return alert("Error submitting tip: " + error.message);
 
