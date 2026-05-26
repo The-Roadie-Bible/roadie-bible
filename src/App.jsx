@@ -6,9 +6,32 @@ const supabase = createClient(
   import.meta.env.VITE_SUPABASE_ANON_KEY
 );
 
-const COUNTRIES = ["Albania","Andorra","Austria","Belarus","Belgium","Bosnia and Herzegovina","Bulgaria","Croatia","Cyprus","Czechia","Denmark","Estonia","Finland","France","Germany","Greece","Hungary","Iceland","Ireland","Italy","Kosovo","Latvia","Liechtenstein","Lithuania","Luxembourg","Malta","Moldova","Monaco","Montenegro","Netherlands","North Macedonia","Norway","Poland","Portugal","Romania","San Marino","Serbia","Slovakia","Slovenia","Spain","Sweden","Switzerland","Ukraine","United Kingdom","Vatican City"];
+const COUNTRIES = [
+  "Albania","Andorra","Austria","Belarus","Belgium","Bosnia and Herzegovina","Bulgaria",
+  "Croatia","Cyprus","Czechia","Denmark","Estonia","Finland","France","Germany","Greece",
+  "Hungary","Iceland","Ireland","Italy","Kosovo","Latvia","Liechtenstein","Lithuania",
+  "Luxembourg","Malta","Moldova","Monaco","Montenegro","Netherlands","North Macedonia",
+  "Norway","Poland","Portugal","Romania","San Marino","Serbia","Slovakia","Slovenia",
+  "Spain","Sweden","Switzerland","Ukraine","United Kingdom","Vatican City"
+];
 
-const ACTIVITY_TYPES = ["Hidden gems","Local culture","Breakfast/Brunch","Coffee","Laundrette","Climbing/Bouldering","Lunch","Dinner","Sports bars","Open late","Good for large groups","Airport hotels","Day rooms","Golf clubs","Padel"];
+const ACTIVITY_TYPES = [
+  "Hidden gems",
+  "Local culture",
+  "Breakfast/Brunch",
+  "Lunch",
+  "Dinner",
+  "Sports bars",
+  "Open late",
+  "Good for large groups",
+  "Airport hotels",
+  "Day rooms",
+  "Golf clubs",
+  "Padel",
+  "Coffee",
+  "Laundrette",
+  "Climbing / Bouldering"
+];
 
 const emptyForm = {
   place_name: "",
@@ -23,7 +46,9 @@ const emptyForm = {
 };
 
 export default function App() {
-  const isAdmin = window.location.pathname === "/admin" || window.location.search.includes("admin");
+  const isAdmin =
+    window.location.pathname === "/admin" ||
+    window.location.search.includes("admin");
 
   const [listings, setListings] = useState([]);
   const [pendingListings, setPendingListings] = useState([]);
@@ -31,9 +56,9 @@ export default function App() {
   const [form, setForm] = useState(emptyForm);
   const [search, setSearch] = useState("");
   const [countryFilter, setCountryFilter] = useState("");
+  const [cityFilter, setCityFilter] = useState("");
   const [activityFilter, setActivityFilter] = useState("");
   const [priceFilter, setPriceFilter] = useState("");
-  const [cityFilter, setCityFilter] = useState("");
   const [session, setSession] = useState(null);
   const [adminEmail, setAdminEmail] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
@@ -90,6 +115,15 @@ export default function App() {
     }));
   }
 
+  function toggleEditActivity(activity) {
+    setEditForm((current) => ({
+      ...current,
+      activity_types: current.activity_types.includes(activity)
+        ? current.activity_types.filter((a) => a !== activity)
+        : [...current.activity_types, activity],
+    }));
+  }
+
   async function uploadImage(file) {
     const fileName = `${Date.now()}-${file.name}`;
 
@@ -102,7 +136,10 @@ export default function App() {
       return "";
     }
 
-    const { data } = supabase.storage.from("listing-images").getPublicUrl(fileName);
+    const { data } = supabase.storage
+      .from("listing-images")
+      .getPublicUrl(fileName);
+
     return data.publicUrl;
   }
 
@@ -132,35 +169,34 @@ export default function App() {
         downvotes: 0,
       },
     ]);
-    await fetch("/api/send-email", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    place_name: form.place_name,
-    city: form.city,
-    country: form.country,
-    description: form.description,
-  }),
-});
 
     if (error) return alert("Error submitting tip: " + error.message);
 
-    await fetch("/api/send-email", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    place_name: form.place_name,
-    city: form.city,
-    country: form.country,
-    description: form.description,
-  }),
-});
-    alert("About to send email");
+    try {
+      const emailResponse = await fetch("/api/send-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          place_name: form.place_name,
+          city: form.city,
+          country: form.country,
+          description: form.description,
+        }),
+      });
+
+      const emailData = await emailResponse.json();
+      console.log("Email response:", emailData);
+
+      alert("About to send email");
+    } catch (emailError) {
+      console.error("Email failed:", emailError);
+      alert("Email failed, but tip was submitted.");
+    }
+
     alert("Tip submitted for approval!");
+
     setForm(emptyForm);
     e.target.reset();
   }
@@ -187,6 +223,7 @@ export default function App() {
 
   async function deleteListing(id) {
     if (!confirm("Delete this listing?")) return;
+
     await supabase.from("listings").delete().eq("id", id);
     fetchPendingListings();
     fetchListings();
@@ -204,15 +241,6 @@ export default function App() {
       visit_date: listing.visit_date || "",
       activity_types: listing.activity_types || [],
     });
-  }
-
-  function toggleEditActivity(activity) {
-    setEditForm((current) => ({
-      ...current,
-      activity_types: current.activity_types.includes(activity)
-        ? current.activity_types.filter((a) => a !== activity)
-        : [...current.activity_types, activity],
-    }));
   }
 
   async function saveEdit(id) {
@@ -259,7 +287,10 @@ export default function App() {
 
     const { error } = await supabase
       .from("listings")
-      .update({ upvotes: newUpvotes, downvotes: newDownvotes })
+      .update({
+        upvotes: newUpvotes,
+        downvotes: newDownvotes,
+      })
       .eq("id", listing.id);
 
     if (error) return alert("Vote error: " + error.message);
@@ -344,7 +375,11 @@ export default function App() {
     return (
       <article className="bg-white text-zinc-950 rounded-3xl overflow-hidden shadow-xl">
         {listing.image_url && (
-          <img src={listing.image_url} alt={listing.place_name} className="w-full h-52 sm:h-56 object-cover" />
+          <img
+            src={listing.image_url}
+            alt={listing.place_name}
+            className="w-full h-52 sm:h-56 object-cover"
+          />
         )}
 
         <div className="p-5">
@@ -353,7 +388,10 @@ export default function App() {
 
           <div className="flex flex-wrap gap-2 mb-4">
             {listing.activity_types?.map((activity) => (
-              <span key={activity} className="bg-amber-400 text-black rounded-full px-3 py-1 text-sm font-bold">
+              <span
+                key={activity}
+                className="bg-amber-400 text-black rounded-full px-3 py-1 text-sm font-bold"
+              >
                 {activity}
               </span>
             ))}
@@ -375,10 +413,17 @@ export default function App() {
           </div>
 
           <div className="flex gap-2 mb-5">
-            <button onClick={() => vote(listing, "up")} className="bg-zinc-100 rounded-xl px-4 py-2 font-bold">
+            <button
+              onClick={() => vote(listing, "up")}
+              className="bg-zinc-100 rounded-xl px-4 py-2 font-bold"
+            >
               👍 {listing.upvotes || 0}
             </button>
-            <button onClick={() => vote(listing, "down")} className="bg-zinc-100 rounded-xl px-4 py-2 font-bold">
+
+            <button
+              onClick={() => vote(listing, "down")}
+              className="bg-zinc-100 rounded-xl px-4 py-2 font-bold"
+            >
               👎 {listing.downvotes || 0}
             </button>
           </div>
@@ -424,7 +469,10 @@ export default function App() {
             />
 
             <div className="flex flex-wrap gap-2">
-              <button onClick={() => addComment(listing.id)} className="bg-amber-400 text-black rounded-xl px-4 py-2 font-black">
+              <button
+                onClick={() => addComment(listing.id)}
+                className="bg-amber-400 text-black rounded-xl px-4 py-2 font-black"
+              >
                 Post Comment
               </button>
 
@@ -432,7 +480,8 @@ export default function App() {
                 onClick={() =>
                   setReportDrafts({
                     ...reportDrafts,
-                    [listing.id]: reportDrafts[listing.id] === undefined ? "" : undefined,
+                    [listing.id]:
+                      reportDrafts[listing.id] === undefined ? "" : undefined,
                   })
                 }
                 className="bg-zinc-200 text-black rounded-xl px-4 py-2 font-black"
@@ -454,7 +503,11 @@ export default function App() {
                     })
                   }
                 />
-                <button onClick={() => reportListing(listing.id)} className="bg-red-600 text-white rounded-xl px-4 py-2 font-black">
+
+                <button
+                  onClick={() => reportListing(listing.id)}
+                  className="bg-red-600 text-white rounded-xl px-4 py-2 font-black"
+                >
                   Send Report
                 </button>
               </div>
@@ -462,6 +515,105 @@ export default function App() {
           </div>
         </div>
       </article>
+    );
+  }
+
+  function AdminList({ items, live = false }) {
+    if (!items.length) return <p className="text-zinc-400">No listings here.</p>;
+
+    return (
+      <div className="grid gap-5">
+        {items.map((listing) => (
+          <div key={listing.id} className="bg-zinc-800 rounded-2xl p-5">
+            {editingId === listing.id ? (
+              <div className="grid gap-3">
+                <input
+                  className="p-3 rounded text-black"
+                  value={editForm.place_name}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, place_name: e.target.value })
+                  }
+                />
+
+                <input
+                  className="p-3 rounded text-black"
+                  value={editForm.city}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, city: e.target.value })
+                  }
+                />
+
+                <input
+                  className="p-3 rounded text-black"
+                  value={editForm.maps_link}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, maps_link: e.target.value })
+                  }
+                />
+
+                <textarea
+                  className="p-3 rounded text-black"
+                  value={editForm.description}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, description: e.target.value })
+                  }
+                />
+
+                <div className="bg-zinc-700 rounded-xl p-3">
+                  {ACTIVITY_TYPES.map((activity) => (
+                    <label key={activity} className="flex gap-2">
+                      <input
+                        type="checkbox"
+                        checked={editForm.activity_types.includes(activity)}
+                        onChange={() => toggleEditActivity(activity)}
+                      />
+                      {activity}
+                    </label>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => saveEdit(listing.id)}
+                  className="bg-green-600 rounded-xl px-4 py-2 font-bold"
+                >
+                  Save Edit
+                </button>
+              </div>
+            ) : (
+              <>
+                <h3 className="text-2xl font-black">{listing.place_name}</h3>
+                <p>{listing.city}, {listing.country}</p>
+                <p>{listing.description}</p>
+
+                <div className="flex flex-wrap gap-3 mt-4">
+                  <button
+                    onClick={() => startEdit(listing)}
+                    className="bg-blue-600 rounded-xl px-4 py-2 font-bold"
+                  >
+                    Edit
+                  </button>
+
+                  {!live && (
+                    <button
+                      onClick={() => approveListing(listing.id)}
+                      className="bg-green-600 rounded-xl px-4 py-2 font-bold"
+                    >
+                      Approve
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => deleteListing(listing.id)}
+                    className="bg-red-600 rounded-xl px-4 py-2 font-bold"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        ))}
+      </div>
     );
   }
 
@@ -507,22 +659,44 @@ export default function App() {
               onChange={(e) => setSearch(e.target.value)}
             />
 
-            <select className="border rounded-2xl p-4" value={countryFilter} onChange={(e) => setCountryFilter(e.target.value)}>
+            <select
+              className="border rounded-2xl p-4"
+              value={countryFilter}
+              onChange={(e) => setCountryFilter(e.target.value)}
+            >
               <option value="">All countries</option>
-              {COUNTRIES.map((country) => <option key={country}>{country}</option>)}
+              {COUNTRIES.map((country) => (
+                <option key={country}>{country}</option>
+              ))}
             </select>
 
-            <select className="border rounded-2xl p-4" value={cityFilter} onChange={(e) => setCityFilter(e.target.value)}>
+            <select
+              className="border rounded-2xl p-4"
+              value={cityFilter}
+              onChange={(e) => setCityFilter(e.target.value)}
+            >
               <option value="">All cities</option>
-              {cities.map((city) => <option key={city}>{city}</option>)}
+              {cities.map((city) => (
+                <option key={city}>{city}</option>
+              ))}
             </select>
 
-            <select className="border rounded-2xl p-4" value={activityFilter} onChange={(e) => setActivityFilter(e.target.value)}>
+            <select
+              className="border rounded-2xl p-4"
+              value={activityFilter}
+              onChange={(e) => setActivityFilter(e.target.value)}
+            >
               <option value="">All activities</option>
-              {ACTIVITY_TYPES.map((activity) => <option key={activity}>{activity}</option>)}
+              {ACTIVITY_TYPES.map((activity) => (
+                <option key={activity}>{activity}</option>
+              ))}
             </select>
 
-            <select className="border rounded-2xl p-4" value={priceFilter} onChange={(e) => setPriceFilter(e.target.value)}>
+            <select
+              className="border rounded-2xl p-4"
+              value={priceFilter}
+              onChange={(e) => setPriceFilter(e.target.value)}
+            >
               <option value="">All prices</option>
               <option>£</option>
               <option>££</option>
@@ -533,6 +707,7 @@ export default function App() {
 
         <section id="about" className="my-10 md:my-12 bg-white/10 border border-white/10 rounded-3xl p-5 md:p-6">
           <h2 className="text-2xl md:text-3xl font-black mb-4">About The Roadie Bible</h2>
+
           <p className="text-base md:text-lg text-zinc-200 leading-relaxed">
             If you're looking for a Wetherspoon or Starbucks, Google might be your best bet.
             If you want peer reviewed hangouts and things to do around the globe, that have
@@ -546,7 +721,9 @@ export default function App() {
           <>
             <h2 className="text-2xl md:text-3xl font-black mb-6">Recently Added</h2>
             <section className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-14">
-              {recentlyAdded.map((listing) => <ListingCard key={listing.id} listing={listing} />)}
+              {recentlyAdded.map((listing) => (
+                <ListingCard key={listing.id} listing={listing} />
+              ))}
             </section>
           </>
         )}
@@ -556,8 +733,11 @@ export default function App() {
             <h2 className="text-2xl md:text-3xl font-black mb-6">
               Top Rated {cityFilter ? `in ${cityFilter}` : `in ${topRatedInCity[0]?.city}`}
             </h2>
+
             <section className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-14">
-              {topRatedInCity.map((listing) => <ListingCard key={listing.id} listing={listing} />)}
+              {topRatedInCity.map((listing) => (
+                <ListingCard key={listing.id} listing={listing} />
+              ))}
             </section>
           </>
         )}
@@ -565,46 +745,105 @@ export default function App() {
         <h2 className="text-2xl md:text-3xl font-black mb-6">Approved Recommendations</h2>
 
         <section className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
-          {filteredListings.map((listing) => <ListingCard key={listing.id} listing={listing} />)}
+          {filteredListings.map((listing) => (
+            <ListingCard key={listing.id} listing={listing} />
+          ))}
         </section>
 
         <section id="submit" className="bg-white/10 border border-white/10 rounded-3xl p-5 md:p-6 mb-16">
           <h2 className="text-2xl md:text-3xl font-black mb-6">Submit a Tip</h2>
 
           <form onSubmit={submitRecommendation} className="grid gap-4">
-            <input className="p-4 rounded-2xl text-black" placeholder="Place name" value={form.place_name} onChange={(e) => setForm({ ...form, place_name: e.target.value })} required />
+            <input
+              className="p-4 rounded-2xl text-black"
+              placeholder="Place name"
+              value={form.place_name}
+              onChange={(e) => setForm({ ...form, place_name: e.target.value })}
+              required
+            />
 
-            <select className="p-4 rounded-2xl text-black" value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} required>
+            <select
+              className="p-4 rounded-2xl text-black"
+              value={form.country}
+              onChange={(e) => setForm({ ...form, country: e.target.value })}
+              required
+            >
               <option value="">Select country</option>
-              {COUNTRIES.map((country) => <option key={country}>{country}</option>)}
+              {COUNTRIES.map((country) => (
+                <option key={country}>{country}</option>
+              ))}
             </select>
 
-            <input className="p-4 rounded-2xl text-black" placeholder="City" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} required />
-            <input className="p-4 rounded-2xl text-black" placeholder="Google Maps link" value={form.maps_link} onChange={(e) => setForm({ ...form, maps_link: e.target.value })} required />
+            <input
+              className="p-4 rounded-2xl text-black"
+              placeholder="City"
+              value={form.city}
+              onChange={(e) => setForm({ ...form, city: e.target.value })}
+              required
+            />
+
+            <input
+              className="p-4 rounded-2xl text-black"
+              placeholder="Google Maps link"
+              value={form.maps_link}
+              onChange={(e) => setForm({ ...form, maps_link: e.target.value })}
+              required
+            />
 
             <div className="bg-zinc-900 rounded-2xl p-4">
               <p className="font-black mb-3">Activity types</p>
+
               <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-2">
                 {ACTIVITY_TYPES.map((activity) => (
                   <label key={activity} className="flex gap-2">
-                    <input type="checkbox" checked={form.activity_types.includes(activity)} onChange={() => toggleActivity(activity)} />
+                    <input
+                      type="checkbox"
+                      checked={form.activity_types.includes(activity)}
+                      onChange={() => toggleActivity(activity)}
+                    />
                     {activity}
                   </label>
                 ))}
               </div>
             </div>
 
-            <select className="p-4 rounded-2xl text-black" value={form.price_range} onChange={(e) => setForm({ ...form, price_range: e.target.value })} required>
+            <select
+              className="p-4 rounded-2xl text-black"
+              value={form.price_range}
+              onChange={(e) => setForm({ ...form, price_range: e.target.value })}
+              required
+            >
               <option>£</option>
               <option>££</option>
               <option>£££</option>
             </select>
 
-            <textarea className="p-4 rounded-2xl text-black" rows={5} placeholder="Brief description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} required />
+            <textarea
+              className="p-4 rounded-2xl text-black"
+              rows={5}
+              placeholder="Brief description"
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              required
+            />
 
-            <input className="p-4 rounded-2xl bg-white text-black" type="file" accept="image/*" onChange={(e) => setForm({ ...form, image_file: e.target.files[0] })} required />
+            <input
+              className="p-4 rounded-2xl bg-white text-black"
+              type="file"
+              accept="image/*"
+              onChange={(e) =>
+                setForm({ ...form, image_file: e.target.files[0] })
+              }
+              required
+            />
 
-            <input className="p-4 rounded-2xl text-black" type="date" value={form.visit_date} onChange={(e) => setForm({ ...form, visit_date: e.target.value })} required />
+            <input
+              className="p-4 rounded-2xl text-black"
+              type="date"
+              value={form.visit_date}
+              onChange={(e) => setForm({ ...form, visit_date: e.target.value })}
+              required
+            />
 
             <label className="flex gap-2">
               <input type="checkbox" required />
@@ -619,10 +858,15 @@ export default function App() {
 
         <section id="contact" className="my-12 bg-white/10 border border-white/10 rounded-3xl p-5 md:p-6">
           <h2 className="text-2xl md:text-3xl font-black mb-4">Contact</h2>
+
           <p className="text-base md:text-lg text-zinc-200 mb-2">
             For admin, corrections, removals or general enquiries:
           </p>
-          <a href="mailto:admin@roadiebible.com" className="text-amber-400 font-black text-xl">
+
+          <a
+            href="mailto:admin@roadiebible.com"
+            className="text-amber-400 font-black text-xl"
+          >
             admin@roadiebible.com
           </a>
         </section>
@@ -633,9 +877,24 @@ export default function App() {
 
             {!session ? (
               <form onSubmit={adminLogin} className="grid gap-3 max-w-md">
-                <input className="p-4 rounded-2xl text-black" placeholder="Admin email" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} />
-                <input className="p-4 rounded-2xl text-black" type="password" placeholder="Password" value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} />
-                <button className="bg-amber-400 text-black rounded-2xl p-4 font-black">Login</button>
+                <input
+                  className="p-4 rounded-2xl text-black"
+                  placeholder="Admin email"
+                  value={adminEmail}
+                  onChange={(e) => setAdminEmail(e.target.value)}
+                />
+
+                <input
+                  className="p-4 rounded-2xl text-black"
+                  type="password"
+                  placeholder="Password"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                />
+
+                <button className="bg-amber-400 text-black rounded-2xl p-4 font-black">
+                  Login
+                </button>
               </form>
             ) : (
               <div className="grid gap-10">
@@ -661,62 +920,4 @@ export default function App() {
       />
     </div>
   );
-
-  function AdminList({ items, live = false }) {
-    if (!items.length) return <p className="text-zinc-400">No listings here.</p>;
-
-    return (
-      <div className="grid gap-5">
-        {items.map((listing) => (
-          <div key={listing.id} className="bg-zinc-800 rounded-2xl p-5">
-            {editingId === listing.id ? (
-              <div className="grid gap-3">
-                <input className="p-3 rounded text-black" value={editForm.place_name} onChange={(e) => setEditForm({ ...editForm, place_name: e.target.value })} />
-                <input className="p-3 rounded text-black" value={editForm.city} onChange={(e) => setEditForm({ ...editForm, city: e.target.value })} />
-                <input className="p-3 rounded text-black" value={editForm.maps_link} onChange={(e) => setEditForm({ ...editForm, maps_link: e.target.value })} />
-                <textarea className="p-3 rounded text-black" value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} />
-
-                <div className="bg-zinc-700 rounded-xl p-3">
-                  {ACTIVITY_TYPES.map((activity) => (
-                    <label key={activity} className="flex gap-2">
-                      <input
-                        type="checkbox"
-                        checked={editForm.activity_types.includes(activity)}
-                        onChange={() => toggleEditActivity(activity)}
-                      />
-                      {activity}
-                    </label>
-                  ))}
-                </div>
-
-                <button onClick={() => saveEdit(listing.id)} className="bg-green-600 rounded-xl px-4 py-2 font-bold">
-                  Save Edit
-                </button>
-              </div>
-            ) : (
-              <>
-                <h3 className="text-2xl font-black">{listing.place_name}</h3>
-                <p>{listing.city}, {listing.country}</p>
-                <p>{listing.description}</p>
-
-                <div className="flex flex-wrap gap-3 mt-4">
-                  <button onClick={() => startEdit(listing)} className="bg-blue-600 rounded-xl px-4 py-2 font-bold">Edit</button>
-
-                  {!live && (
-                    <button onClick={() => approveListing(listing.id)} className="bg-green-600 rounded-xl px-4 py-2 font-bold">
-                      Approve
-                    </button>
-                  )}
-
-                  <button onClick={() => deleteListing(listing.id)} className="bg-red-600 rounded-xl px-4 py-2 font-bold">
-                    Delete
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        ))}
-      </div>
-    );
-  }
 }
