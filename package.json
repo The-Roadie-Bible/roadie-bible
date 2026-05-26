@@ -9,6 +9,7 @@
     "@vitejs/plugin-react": "latest",
     "vite": "latest",
     "react": "latest",
+    "resend": "^3.2.0",
     "react-dom": "latest",
     "lucide-react": "latest"
   },
