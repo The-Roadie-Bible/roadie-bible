@@ -147,6 +147,18 @@ export default function App() {
 
     if (error) return alert("Error submitting tip: " + error.message);
 
+    await fetch("/api/send-email", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    place_name: form.place_name,
+    city: form.city,
+    country: form.country,
+    description: form.description,
+  }),
+});
     alert("Tip submitted for approval!");
     setForm(emptyForm);
     e.target.reset();
