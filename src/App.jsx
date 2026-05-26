@@ -8,7 +8,7 @@ const supabase = createClient(
 
 const COUNTRIES = ["Albania","Andorra","Austria","Belarus","Belgium","Bosnia and Herzegovina","Bulgaria","Croatia","Cyprus","Czechia","Denmark","Estonia","Finland","France","Germany","Greece","Hungary","Iceland","Ireland","Italy","Kosovo","Latvia","Liechtenstein","Lithuania","Luxembourg","Malta","Moldova","Monaco","Montenegro","Netherlands","North Macedonia","Norway","Poland","Portugal","Romania","San Marino","Serbia","Slovakia","Slovenia","Spain","Sweden","Switzerland","Ukraine","United Kingdom","Vatican City"];
 
-const ACTIVITY_TYPES = ["Hidden gems","Local culture","Breakfast/Brunch","Lunch","Dinner","Sports bars","Open late","Good for large groups","Airport hotels","Day rooms","Golf clubs","Padel"];
+const ACTIVITY_TYPES = ["Hidden gems","Local culture","Breakfast/Brunch","Laundrette","Climbing/Bouldering","Lunch","Dinner","Sports bars","Open late","Good for large groups","Airport hotels","Day rooms","Golf clubs","Padel"];
 
 const emptyForm = {
   place_name: "",
