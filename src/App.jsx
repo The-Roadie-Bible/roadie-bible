@@ -765,11 +765,36 @@ async function uploadImage(file) {
         {recentlyAdded.length > 0 && (
           <>
             <h2 className="text-2xl md:text-3xl font-black mb-6">Recently Added</h2>
-            <section className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-14">
-              {recentlyAdded.map((listing) => (
-                <ListingCard key={listing.id} listing={listing} />
-              ))}
-            </section>
+            {viewMode === "list" ? (
+  <section className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
+    {filteredListings.map((listing) => (
+      <ListingCard key={listing.id} listing={listing} />
+    ))}
+  </section>
+) : (
+  <section className="grid gap-4 mb-16">
+    {filteredListings.map((listing) => (
+      <div
+        key={listing.id}
+        className="bg-zinc-900 border border-white/10 rounded-3xl p-4 flex justify-between gap-4"
+      >
+        <div>
+          <h3 className="text-xl font-black">{listing.place_name}</h3>
+          <p className="text-zinc-400">{listing.city}, {listing.country}</p>
+        </div>
+
+        <a
+          href={listing.maps_link || listing.google_maps}
+          target="_blank"
+          rel="noreferrer"
+          className="bg-amber-400 text-black px-4 py-2 rounded-2xl font-black h-fit"
+        >
+          Open Map
+        </a>
+      </div>
+    ))}
+  </section>
+)}
           </>
         )}
 
