@@ -787,6 +787,29 @@ async function uploadImage(file) {
           </>
         )}
 
+        <div className="flex gap-3 mb-6">
+  <button
+    onClick={() => setViewMode("list")}
+    className={`px-4 py-2 rounded-2xl font-bold ${
+      viewMode === "list"
+        ? "bg-amber-400 text-black"
+        : "bg-zinc-800 text-white"
+    }`}
+  >
+    List View
+  </button>
+
+  <button
+    onClick={() => setViewMode("map")}
+    className={`px-4 py-2 rounded-2xl font-bold ${
+      viewMode === "map"
+        ? "bg-amber-400 text-black"
+        : "bg-zinc-800 text-white"
+    }`}
+  >
+    Map View
+  </button>
+</div>
         <h2 className="text-2xl md:text-3xl font-black mb-6">Approved Recommendations</h2>
 
         <section className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
