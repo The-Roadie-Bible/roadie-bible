@@ -66,6 +66,7 @@ export default function App() {
   const [editForm, setEditForm] = useState(null);
   const [commentDrafts, setCommentDrafts] = useState({});
   const [reportDrafts, setReportDrafts] = useState({});
+  const [viewMode, setViewMode] = useState("list");
 
   useEffect(() => {
     fetchListings();
