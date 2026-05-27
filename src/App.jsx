@@ -698,7 +698,7 @@ async function uploadImage(file) {
   Search
 </button>
         </nav>
-               <section className="max-w-7xl mx-auto px-4 mt-10 mb-12
+               <section className="max-w-7xl mx-auto px-4 mt-10 mb-12">
   <div className="max-w-7xl mx-auto">
     <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
 
