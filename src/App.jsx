@@ -689,7 +689,7 @@ async function uploadImage(file) {
           </div>
           
         </nav>
-               <section className="fixed top-20 left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-white/10 p-3">
+               <section className="max-w-7xl mx-auto px-4 mt-10 mb-12
   <div className="max-w-7xl mx-auto">
     <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
 
