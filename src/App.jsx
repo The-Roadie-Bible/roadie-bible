@@ -66,7 +66,6 @@ export default function App() {
   const [editForm, setEditForm] = useState(null);
   const [commentDrafts, setCommentDrafts] = useState({});
   const [reportDrafts, setReportDrafts] = useState({});
-  const [viewMode, setViewMode] = useState("list");
 
   useEffect(() => {
     fetchListings();
@@ -689,29 +688,6 @@ async function uploadImage(file) {
             <a href="#contact" className="hover:text-amber-300">Contact</a>
           </div>
         </nav>
-        <div className="fixed top-20 left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-white/10 px-4 py-3 flex gap-3">
-  <button
-    onClick={() => setViewMode("list")}
-    className={`px-4 py-2 rounded-2xl font-bold ${
-      viewMode === "list"
-        ? "bg-amber-400 text-black"
-        : "bg-zinc-800 text-white"
-    }`}
-  >
-    List View
-  </button>
-
-  <button
-    onClick={() => setViewMode("map")}
-    className={`px-4 py-2 rounded-2xl font-bold ${
-      viewMode === "map"
-        ? "bg-amber-400 text-black"
-        : "bg-zinc-800 text-white"
-    }`}
-  >
-    Map View
-  </button>
-</div>
 
         <div className="relative max-w-7xl mx-auto px-4 pt-36 pb-12 md:pt-40 md:pb-24">
           <p className="text-amber-300 uppercase tracking-[0.25em] text-xs sm:text-sm font-bold mb-4">
