@@ -667,7 +667,7 @@ async function uploadImage(file) {
       <header className="relative overflow-hidden border-b border-white/10">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(251,191,36,0.28),_transparent_35%),radial-gradient(circle_at_bottom_right,_rgba(59,130,246,0.22),_transparent_35%)]" />
 
-        <nav className="sticky top-0 z-50 bg-zinc-950/95 backdrop-blur border-b border-white/10 max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <nav className="fixed top-0 left-0 right-0 z-50 bg-zinc-950/95 backdrop-blur border-b border-white/10 px-4 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <a
   href="/"
   className="flex items-center gap-3 text-amber-300"
@@ -690,7 +690,7 @@ async function uploadImage(file) {
           </div>
         </nav>
 
-        <div className="relative max-w-7xl mx-auto px-4 py-12 md:py-24">
+        <div className="relative max-w-7xl mx-auto px-4 pt-36 pb-12 md:pt-40 md:pb-24">
           <p className="text-amber-300 uppercase tracking-[0.25em] text-xs sm:text-sm font-bold mb-4">
             Global travel help guide
           </p>
