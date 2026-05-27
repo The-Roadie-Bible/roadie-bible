@@ -775,13 +775,13 @@ async function uploadImage(file) {
         {recentlyAdded.length > 0 && (
           <>
             <h2 className="text-2xl md:text-3xl font-black mb-6">Recently Added</h2>
-            {viewMode === "list" ? (
+            true ? (
   <section className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
     {filteredListings.map((listing) => (
       <ListingCard key={listing.id} listing={listing} />
     ))}
   </section>
-) : (
+) : null}
   <section className="grid gap-4 mb-16">
     {filteredListings.map((listing) => (
       <div
