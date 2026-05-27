@@ -684,7 +684,7 @@ async function uploadImage(file) {
           </p>
 
           <h1 className="text-4xl sm:text-5xl md:text-7xl font-black leading-none mb-6">
-            If We've never been it's probably not worth going.
+            If we've never been it's probably not worth going.
           </h1>
 
           <p className="text-lg sm:text-xl text-zinc-300 max-w-2xl">
