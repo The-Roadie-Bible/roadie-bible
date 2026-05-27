@@ -668,9 +668,20 @@ async function uploadImage(file) {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(251,191,36,0.28),_transparent_35%),radial-gradient(circle_at_bottom_right,_rgba(59,130,246,0.22),_transparent_35%)]" />
 
         <nav className="relative max-w-7xl mx-auto px-4 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <a href="/" className="text-2xl font-black text-amber-300 tracking-tight">
-            The Roadie Bible
-          </a>
+          <a
+  href="/"
+  className="flex items-center gap-3 text-amber-300"
+>
+  <img
+    src="/roadie-bible-logo.jpg"
+    alt="Roadie Bible"
+    className="w-14 h-14 object-contain"
+  />
+
+  <span className="text-2xl font-black tracking-tight">
+    The Roadie Bible
+  </span>
+</a>
 
           <div className="flex flex-wrap gap-4 text-sm md:text-base font-bold">
             <a href="#about" className="hover:text-amber-300">About</a>
