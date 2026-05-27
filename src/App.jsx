@@ -780,7 +780,7 @@ async function uploadImage(file) {
     <ListingCard key={listing.id} listing={listing} />
   ))}
 </section>
-)}
+
           </>
         )}
 
