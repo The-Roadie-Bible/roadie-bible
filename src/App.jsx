@@ -698,7 +698,36 @@ async function uploadImage(file) {
   Search
 </button>
         </nav>
-               <section id="search-section" className="max-w-7xl mx-auto px-4 py-35">
+
+        <div className="relative max-w-7xl mx-auto px-4 pt-36 pb-12 md:pt-56 md:pb-24">
+          <p className="text-amber-300 uppercase tracking-[0.25em] text-xs sm:text-sm font-bold mb-4">
+            Global travel help guide
+          </p>
+
+          <h1 className="text-4xl sm:text-5xl md:text-7xl font-black leading-none mb-6">
+            If we've never been it's probably not worth going.
+          </h1>
+
+          <p className="text-lg sm:text-xl text-zinc-300 max-w-2xl">
+            Hotels, food, sport, hidden gems and road-tested places for touring crew and global travellers.
+          </p>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 py-8 md:py-10">
+
+        <section id="about" className="my-10 md:my-12 bg-white/10 border border-white/10 rounded-3xl p-5 md:p-6">
+          <h2 className="text-2xl md:text-3xl font-black mb-4">About The Roadie Bible</h2>
+
+          <p className="text-base md:text-lg text-zinc-200 leading-relaxed">
+            If you're looking for a Wetherspoon or Starbucks, Google might be your best bet.
+            If you want peer reviewed hangouts and things to do around the globe, that have
+            been tried and tested by the people who spend the longest on the road, then dive
+            in and search away. Add your own suggestions and up/down vote existing listings
+            to help the rest of the community find the best places around.
+          </p>
+        </section>
+        <section id="search-section" className="max-w-7xl mx-auto px-4 py-35">
   <div className="max-w-7xl mx-auto">
     <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
 
@@ -756,35 +785,6 @@ async function uploadImage(file) {
     </div>
   </div>
 </section>
-
-        <div className="relative max-w-7xl mx-auto px-4 pt-36 pb-12 md:pt-56 md:pb-24">
-          <p className="text-amber-300 uppercase tracking-[0.25em] text-xs sm:text-sm font-bold mb-4">
-            Global travel help guide
-          </p>
-
-          <h1 className="text-4xl sm:text-5xl md:text-7xl font-black leading-none mb-6">
-            If we've never been it's probably not worth going.
-          </h1>
-
-          <p className="text-lg sm:text-xl text-zinc-300 max-w-2xl">
-            Hotels, food, sport, hidden gems and road-tested places for touring crew and global travellers.
-          </p>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 py-8 md:py-10">
-
-        <section id="about" className="my-10 md:my-12 bg-white/10 border border-white/10 rounded-3xl p-5 md:p-6">
-          <h2 className="text-2xl md:text-3xl font-black mb-4">About The Roadie Bible</h2>
-
-          <p className="text-base md:text-lg text-zinc-200 leading-relaxed">
-            If you're looking for a Wetherspoon or Starbucks, Google might be your best bet.
-            If you want peer reviewed hangouts and things to do around the globe, that have
-            been tried and tested by the people who spend the longest on the road, then dive
-            in and search away. Add your own suggestions and up/down vote existing listings
-            to help the rest of the community find the best places around.
-          </p>
-        </section>
 
         {recentlyAdded.length > 0 && (
           <>
