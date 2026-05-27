@@ -687,61 +687,66 @@ async function uploadImage(file) {
             <a href="#submit" className="hover:text-amber-300">Add a Recommendation</a>
             <a href="#contact" className="hover:text-amber-300">Contact</a>
           </div>
+          
         </nav>
-                <section className="bg-white text-black rounded-3xl p-4 md:p-5 shadow-2xl -mt-12 md:-mt-16 relative z-10 mb-10 md:mb-12">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
-            <input
-              className="border rounded-2xl p-4 sm:col-span-2 lg:col-span-1"
-              placeholder="Search city, venue or country..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+               <section className="fixed top-20 left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-white/10 p-3">
+  <div className="max-w-7xl mx-auto">
+    <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
 
-            <select
-              className="border rounded-2xl p-4"
-              value={countryFilter}
-              onChange={(e) => setCountryFilter(e.target.value)}
-            >
-              <option value="">All countries</option>
-              {COUNTRIES.map((country) => (
-                <option key={country}>{country}</option>
-              ))}
-            </select>
+      <input
+        className="border border-white/10 bg-zinc-900 text-white rounded-2xl p-4 sm:col-span-2 lg:col-span-1"
+        placeholder="Search city, venue or country..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+      />
 
-            <select
-              className="border rounded-2xl p-4"
-              value={cityFilter}
-              onChange={(e) => setCityFilter(e.target.value)}
-            >
-              <option value="">All cities</option>
-              {cities.map((city) => (
-                <option key={city}>{city}</option>
-              ))}
-            </select>
+      <select
+        className="border border-white/10 bg-zinc-900 text-white rounded-2xl p-4"
+        value={countryFilter}
+        onChange={(e) => setCountryFilter(e.target.value)}
+      >
+        <option value="">All countries</option>
+        {COUNTRIES.map((country) => (
+          <option key={country}>{country}</option>
+        ))}
+      </select>
 
-            <select
-              className="border rounded-2xl p-4"
-              value={activityFilter}
-              onChange={(e) => setActivityFilter(e.target.value)}
-            >
-              <option value="">All activities</option>
-              {ACTIVITY_TYPES.map((activity) => (
-                <option key={activity}>{activity}</option>
-              ))}
-            </select>
+      <select
+        className="border border-white/10 bg-zinc-900 text-white rounded-2xl p-4"
+        value={cityFilter}
+        onChange={(e) => setCityFilter(e.target.value)}
+      >
+        <option value="">All cities</option>
+        {cities.map((city) => (
+          <option key={city}>{city}</option>
+        ))}
+      </select>
 
-            <select
-              className="border rounded-2xl p-4"
-              value={priceFilter}
-              onChange={(e) => setPriceFilter(e.target.value)}
-            >
-              <option value="">All prices</option>
-              <option>£</option>
-              <option>££</option>
-              <option>£££</option>
-            </select>
-          </div>
-        </section>
+      <select
+        className="border border-white/10 bg-zinc-900 text-white rounded-2xl p-4"
+        value={activityFilter}
+        onChange={(e) => setActivityFilter(e.target.value)}
+      >
+        <option value="">All activities</option>
+        {ACTIVITY_TYPES.map((activity) => (
+          <option key={activity}>{activity}</option>
+        ))}
+      </select>
+
+      <select
+        className="border border-white/10 bg-zinc-900 text-white rounded-2xl p-4"
+        value={priceFilter}
+        onChange={(e) => setPriceFilter(e.target.value)}
+      >
+        <option value="">All prices</option>
+        <option>£</option>
+        <option>££</option>
+        <option>£££</option>
+      </select>
+
+    </div>
+  </div>
+</section>
 
         <div className="relative max-w-7xl mx-auto px-4 pt-64 pb-12 md:pt-56 md:pb-24">
           <p className="text-amber-300 uppercase tracking-[0.25em] text-xs sm:text-sm font-bold mb-4">
