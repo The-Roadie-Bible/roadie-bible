@@ -748,7 +748,7 @@ async function uploadImage(file) {
   </div>
 </section>
 
-        <div className="relative max-w-7xl mx-auto px-4 pt-64 pb-12 md:pt-56 md:pb-24">
+        <div className="relative max-w-7xl mx-auto px-4 pt-36 pb-12 md:pt-56 md:pb-24">
           <p className="text-amber-300 uppercase tracking-[0.25em] text-xs sm:text-sm font-bold mb-4">
             Global travel help guide
           </p>
