@@ -723,7 +723,7 @@ async function uploadImage(file) {
             to help the rest of the community find the best places around.
           </p>
         </section>
-        <section className="max-w-7xl mx-auto px-4 mt-10 mb-20">
+        <section id="search-section" className="max-w-7xl mx-auto px-4 mt-10 mb-20">
   <div className="max-w-7xl mx-auto">
     <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
 
@@ -800,7 +800,7 @@ async function uploadImage(file) {
               Top Rated {cityFilter ? `in ${cityFilter}` : `in ${topRatedInCity[0]?.city}`}
             </h2>
 
-            <section id="search-section" className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-14 scroll-mt-56">
+           <section className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-14">
               {topRatedInCity.map((listing) => (
                 <ListingCard key={listing.id} listing={listing} />
               ))}
