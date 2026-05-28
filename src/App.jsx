@@ -686,8 +686,7 @@ async function uploadImage(file) {
             <a href="#about" className="hover:text-amber-300">About</a>
             <a href="#submit" className="hover:text-amber-300">Add a Recommendation</a>
             <a href="#contact" className="hover:text-amber-300">Contact</a>
-             <a
-  href="#search-section"
+             <a href="#search-anchor"
   className="bg-amber-400 text-black w-10 h-10 rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition"
 >
   🔍
@@ -723,6 +722,7 @@ async function uploadImage(file) {
             to help the rest of the community find the best places around.
           </p>
         </section>
+        <div id="search-anchor" className="relative -top-32"></div>
         <section id="search-section" className="max-w-7xl mx-auto px-4 mt-10 mb-40">
   <div className="max-w-7xl mx-auto">
     <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
