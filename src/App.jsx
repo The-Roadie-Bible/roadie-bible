@@ -723,7 +723,7 @@ async function uploadImage(file) {
             to help the rest of the community find the best places around.
           </p>
         </section>
-        <section id="search-section" className="max-w-7xl mx-auto px-4 mt-10 mb-50">
+        <section id="search-section" className="max-w-7xl mx-auto px-4 mt-10 mb-40">
   <div className="max-w-7xl mx-auto">
     <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
 
