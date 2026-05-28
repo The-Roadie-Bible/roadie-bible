@@ -690,8 +690,12 @@ async function uploadImage(file) {
   type="button"
   onClick={() => {
     const searchSection = document.getElementById("search-section");
+
     if (searchSection) {
-      searchSection.scrollIntoView({ behavior: "smooth", block: "start" });
+      searchSection.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
     }
   }}
   className="bg-amber-400 text-black w-10 h-10 rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition"
