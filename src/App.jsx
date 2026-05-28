@@ -686,22 +686,12 @@ async function uploadImage(file) {
             <a href="#about" className="hover:text-amber-300">About</a>
             <a href="#submit" className="hover:text-amber-300">Add a Recommendation</a>
             <a href="#contact" className="hover:text-amber-300">Contact</a>
-             <button
-  type="button"
-  onClick={() => {
-    const searchSection = document.getElementById("search-section");
-
-    if (searchSection) {
-      searchSection.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }
-  }}
+             <a
+  href="#search-section"
   className="bg-amber-400 text-black w-10 h-10 rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition"
 >
   🔍
-</button>
+</a>
           </div>
         </nav>
 
