@@ -30,6 +30,8 @@ const ACTIVITY_TYPES = [
   "Padel",
   "Coffee",
   "Laundrette",
+  "Pubs/Bars",
+  "Cocktails",
   "Climbing / Bouldering"
 ];
 
