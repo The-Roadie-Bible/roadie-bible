@@ -686,8 +686,7 @@ async function uploadImage(file) {
             <a href="#about" className="hover:text-amber-300">About</a>
             <a href="#submit" className="hover:text-amber-300">Add a Recommendation</a>
             <a href="#contact" className="hover:text-amber-300">Contact</a>
-          </div>
-          <button
+             <button
   type="button"
   onClick={() => {
     const searchSection = document.getElementById("search-section");
@@ -699,6 +698,7 @@ async function uploadImage(file) {
 >
   🔍
 </button>
+          </div>
         </nav>
 
         <div className="relative max-w-7xl mx-auto px-4 pt-36 pb-12 md:pt-56 md:pb-24">
