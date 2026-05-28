@@ -688,12 +688,14 @@ async function uploadImage(file) {
             <a href="#contact" className="hover:text-amber-300">Contact</a>
           </div>
           <button
-  onClick={() =>
-    document
-      .getElementById("search-section")
-      ?.scrollIntoView({ behavior: "smooth" })
-  }
-  className="fixed top-4 right-4 z-50 bg-amber-400 text-black w-10 h-10 rounded-full font-bold flex items-center justify-center shadow-lg hover:scale-105 transition"
+  type="button"
+  onClick={() => {
+    const searchSection = document.getElementById("search-section");
+    if (searchSection) {
+      searchSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }}
+  className="bg-amber-400 text-black w-10 h-10 rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition"
 >
   🔍
 </button>
