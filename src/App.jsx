@@ -693,9 +693,9 @@ async function uploadImage(file) {
       .getElementById("search-section")
       ?.scrollIntoView({ behavior: "smooth" })
   }
-  className="bg-amber-400 text-black px-4 py-2 rounded-2xl font-bold"
+  className="fixed top-4 right-4 z-50 bg-amber-400 text-black w-10 h-10 rounded-full font-bold flex items-center justify-center shadow-lg hover:scale-105 transition"
 >
-  Search
+  🔍
 </button>
         </nav>
 
