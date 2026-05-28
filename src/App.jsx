@@ -800,7 +800,7 @@ async function uploadImage(file) {
               Top Rated {cityFilter ? `in ${cityFilter}` : `in ${topRatedInCity[0]?.city}`}
             </h2>
 
-            <section id="search-section" className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-14 scroll-mt-32">
+            <section id="search-section" className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-14 scroll-mt-56">
               {topRatedInCity.map((listing) => (
                 <ListingCard key={listing.id} listing={listing} />
               ))}
